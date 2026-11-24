@@ -69,9 +69,10 @@ const days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'], fullDays=['Пон
 const food={oats:['Овсяные хлопья',120,'Бакалея',500],rice:['Рис',135,'Бакалея',900],buck:['Гречка',130,'Бакалея',900],pasta:['Макароны',125,'Бакалея',450],potato:['Картофель',65,'Овощи и фрукты',1000],carrot:['Морковь',65,'Овощи и фрукты',1000],onion:['Лук',60,'Овощи и фрукты',1000],tomato:['Помидоры',240,'Овощи и фрукты',500],cucumber:['Огурцы',190,'Овощи и фрукты',500],cabbage:['Капуста',60,'Овощи и фрукты',1000],apple:['Яблоки',135,'Овощи и фрукты',1000],banana:['Бананы',150,'Овощи и фрукты',1000],berries:['Ягоды замороженные',360,'Овощи и фрукты',300],egg:['Яйца',12,'Мясо, рыба и яйца',10,'шт'],chicken:['Куриное филе',390,'Мясо, рыба и яйца',500],fish:['Минтай',350,'Мясо, рыба и яйца',500],milk:['Молоко',105,'Молочные продукты',1000,'мл'],curd:['Творог',410,'Молочные продукты',200],yogurt:['Йогурт',230,'Молочные продукты',400],cheese:['Сыр',780,'Молочные продукты',200],oil:['Растительное масло',150,'Бакалея',500,'мл'],flour:['Мука',75,'Бакалея',1000],lentil:['Чечевица',210,'Бакалея',450],beans:['Фасоль',200,'Бакалея',400],bread:['Хлеб',145,'Бакалея',400],mushroom:['Шампиньоны',260,'Овощи и фрукты',400],broccoli:['Брокколи',220,'Овощи и фрукты',400]};
 const publicReference={oats:[54.99,350],apple:[104.99,1000],banana:[164.99,1000],potato:[83.99,1000],chicken:[469.99,1000],milk:[74.99,900],egg:[146.99,10],curd:[194.99,450],fish:[544.99,400]};
 for(const [k,[p,n]] of Object.entries(publicReference)){food[k][1]=p*(food[k][4]==='шт'?1:1000)/n;food[k][3]=n}
+let cookieReference={price:129.99,pack:403};
 function estimateExtra(name,unit,amount){
  const n=String(name).toLowerCase().replace(/ё/g,'е');
- if(/печен|печеньк/.test(n)&&unit==='г')return {price:129.99,pack:403,source:'5ka-snapshot'};
+ if(/печен|печеньк/.test(n)&&unit==='г')return {...cookieReference,source:'5ka-snapshot'};
  if(/шоколад/.test(n)&&unit==='г')return {price:120,pack:100,source:'estimate'};
  if(/кофе/.test(n)&&unit==='г')return {price:400,pack:200,source:'estimate'};
  if(/чай/.test(n)&&unit==='г')return {price:130,pack:100,source:'estimate'};
@@ -188,7 +189,7 @@ async function catalogAction(a,v){
   if(a==='catalog-search'){if(!s.priceStoreId)throw Error('Сначала найдите магазин.');let data=await catalogCall('search_products',{store_id:s.priceStoreId,query:food[catalogIngredient][0],sort:'popularity',limit:20});catalogResults=(data.products||[]).filter(p=>p.is_available===true&&p.plu&&p.name&&Number(p.old_price||(!p.is_promo?p.price:0))>0);if(!catalogResults.length)throw Error('Подтверждённые товары не найдены.')}
  }catch(e){catalogError=e.message||'Каталог недоступен.'}finally{catalogBusy=false;render()}
 }
-const shopLinks={'Пятёрочка':'https://5ka.ru/','Магнит':'https://magnit.ru/','Чижик':'https://chizhik.club/','Дикси':'https://dixy.ru/','Перекрёсток':'https://www.perekrestok.ru/','Лента':'https://lenta.com/','Ашан':'https://www.auchan.ru/','ВкусВилл':'https://vkusvill.ru/','Светофор':'https://svetofor-nsk.ru/','Верный':'https://www.verno-info.ru/','Монетка':'https://www.monetka.ru/'};
+const shopLinks={'Пятёрочка':'https://5ka.ru/','Магнит':'https://magnit.ru/','Чижик':'https://chizhik.club/','Дикси':'https://dixy.ru/','Перекрёсток':'https://www.perekrestok.ru/','Лента':'https://lenta.com/','Ашан':'https://www.auchan.ru/','ВкусВилл':'https://vkusvill.ru/','Светофор':'https://svetofor.market/','Верный':'https://www.verno-info.ru/','Монетка':'https://www.monetka.ru/'};
 function orderPanel(){const links=s.storeChoices.filter(n=>shopLinks[n]);if(!links.length)return '';return '<section class="order-area"><h2>купить продукты</h2><div class="store-grid">'+links.map(n=>'<a class="primary store-link" href="'+shopLinks[n]+'">'+esc(n)+'</a>').join('')+'</div><p class="small-note">товары добавляются в корзину магазина вручную</p></section>'}
 let extraEdit='',extraError='',extraBack='quiz';
 const extraItems=()=>s.extras.filter(x=>x.enabled!==false);
@@ -301,11 +302,15 @@ function decodeAI(raw){
  try{const issue=auditPlan(plan);if(issue)throw Error(issue);cost=total(plan)}finally{recipes.splice(baseCount);recipes.push(...old)}
  return {fresh,plan,cost,note:typeof raw.note==='string'?raw.note.slice(0,700):''};
 }
-async function requestAI(correction=''){
+async function refreshPublicPrices(){
+ try{const response=await fetch('https://raw.githubusercontent.com/anufriev163/ladno/main/catalog-prices.json',{cache:'no-store',signal:AbortSignal.timeout(2800),credentials:'omit'});if(!response.ok)return;const data=await response.json();for(const [k,row] of Object.entries(data.rows||{})){if(!row||typeof row.price!=='number'||!Number.isFinite(row.price)||row.price<5||row.price>5000||!Number.isInteger(row.pack)||row.pack<1||row.pack>5000||!row.url?.startsWith('https://5ka.ru/'))continue;if(k==='cookie'){cookieReference={price:row.price,pack:row.pack};continue}if(!Object.hasOwn(publicReference,k)||row.pack!==publicReference[k][1])continue;food[k][1]=row.price*(food[k][4]==='шт'?1:1000)/row.pack;food[k][3]=row.pack}
+ for(const x of s.extras){if(x.source==='5ka-snapshot'||x.source==='estimate'||x.price==null)Object.assign(x,estimateExtra(x.name,x.unit,x.qty))}syncExtras();save()
+ }catch{} }
+async function requestAI(correction='',timeout=35000){
  const catalog=Object.fromEntries(Object.entries(food).filter(([id])=>!id.startsWith('extra_')&&!nameBlocked(food[id][0])&&!s.dislikes.includes(id)).map(([id,f])=>{const p=selectedProduct(id);return [id,{name:f[0],price:p?p.price*(f[4]==='шт'?1:1000)/p.pack:f[1],package:p?p.pack:f[3],unit:f[4]||'г'}]}));
  const profile={store:s.store,stores:s.storeChoices,goal:s.goal,likes:s.likes.map(k=>food[k]?.[0]).filter(Boolean).concat(s.customLikes),customDislikes:s.customDislikes,adults:s.adults,children:s.children,servings:portions(),days:s.days,meals:s.meals,equipment:s.equipment,diet:s.diet,style:s.style,allergies:s.allergies,dislikes:s.dislikes,dislikeNames:s.dislikes.map(k=>food[k]?.[0]).filter(Boolean).concat(s.customDislikes),pantry:s.pantry,budget:s.budget,weeklyExtras:extraItems().map(x=>({name:x.name,quantity:x.qty,unit:x.unit,price:basket([]).find(b=>b.k===x.id)?.price??null})),weeklyExtrasKnownCost:extrasCost(),weeklyExtrasUnknownPrices:missingPrices([]),quantityLimits:quantityLimits(),dailyQuantityLimits:dailyGuard,servingQuantityLimits:servingGuard};
  let resp;
- try{resp=await fetch(API_BASE+'/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profile,catalog,correction}),signal:AbortSignal.timeout(170000),cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'})}
+ try{resp=await fetch(API_BASE+'/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profile,catalog,correction}),signal:AbortSignal.timeout(Math.max(1000,timeout)),cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'})}
  catch(e){throw Error('Сервис составления меню временно недоступен.')}
  if(!resp.ok)throw Error('Сервис составления меню временно недоступен.');
  const data=await resp.json();const answer=data?.content;
@@ -317,16 +322,17 @@ async function generateAI(){
  if(aiBusy)return;
  const conflict=extraItems().find(x=>nameBlocked(x.name)||s.dislikes.some(k=>norm(food[k]?.[0])===norm(x.name)));if(conflict){s.error='Продукт «'+conflict.name+'» одновременно указан в исключениях и постоянных покупках.';s.view='quiz';s.step=LAST_STEP;render();return}
  if(!API_BASE){const err=generate();if(err){s.view='quiz';s.step=LAST_STEP;s.error=err;render()}else window.scrollTo(0,0);return}
- aiBusy=true;aiError='';save();
+ aiBusy=true;aiError='';const startedAt=Date.now();save();
  app.innerHTML=head(false)+'<main class="loading"><div class="spinner" aria-hidden="true"></div><h1>Составляем ваше меню</h1><p role="status">Учитываем ваши ответы и рассчитываем список покупок.</p></main>';
  try{
- let result, retried=false;
- try{result=await requestAI()}catch(e){if(!/Слишком|Мало разнообразных|порци|некоррект|неполный|запрещённый|Повтор|ограничени|Не найден/i.test(e.message||''))throw e;retried=true;result=await requestAI('Исправь меню: '+e.message+'. Проверь суммарный вес каждого продукта на одного человека и разнообразие.')}
- if(!retried&&result.cost>s.budget){try{const retry=await requestAI('Первый план стоил '+Math.round(result.cost)+' ₽ при бюджете '+s.budget+' ₽. Предложи более экономный полноценный вариант; не уменьшай порции искусственно.');if(retry.cost<result.cost)result=retry}catch{}}
+ await refreshPublicPrices();
+ let result, retried=false;const remaining=()=>Math.max(1000,45000-(Date.now()-startedAt));
+ try{result=await requestAI('',Math.min(35000,remaining()))}catch(e){if(!/Слишком|Мало разнообразных|порци|некоррект|неполный|запрещённый|Повтор|ограничени|Не найден/i.test(e.message||''))throw e;if(remaining()<10000)throw e;retried=true;result=await requestAI('Исправь меню: '+e.message+'. Проверь суммарный вес каждого продукта на одного человека и разнообразие.',remaining())}
+ if(!retried&&result.cost>s.budget&&remaining()>=10000){try{const retry=await requestAI('Первый план стоил '+Math.round(result.cost)+' ₽ при бюджете '+s.budget+' ₽. Предложи более экономный полноценный вариант; не уменьшай порции искусственно.',remaining());if(retry.cost<result.cost)result=retry}catch{}}
  if(result.cost>s.budget)throw Error('Меню выше бюджета');
  recipes.splice(baseCount);recipes.push(...result.fresh);s.aiRecipes=result.fresh;s.plan=result.plan;s.editingQuiz=false;s.source='ai';s.aiNote=result.note;s.checked=[];s.error='';s.view='shopping';
  }catch(e){const err=generate();if(err){s.error='Не удалось составить меню. '+err;s.view='quiz';s.step=LAST_STEP;}}
- finally{aiBusy=false;render();window.scrollTo(0,0)}
+ finally{s.lastGenerationSeconds=Math.round((Date.now()-startedAt)/100)/10;aiBusy=false;render();window.scrollTo(0,0)}
 }
 
 function head(back=true){return `<header>${back?'<button class="back" data-act="back" aria-label="Назад">← Назад</button>':'<span></span>'}<div class="brand">налегке</div><small>${s.view==='quiz'&&s.step?`Шаг ${s.step} из ${LAST_STEP}`:''}</small></header>`}
