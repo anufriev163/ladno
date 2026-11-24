@@ -1,0 +1,86 @@
+{
+  "source": "5ka.ru public catalog",
+  "observed": "2026-11-24",
+  "rows": {
+    "oats": {
+      "price": 54.99,
+      "pack": 350,
+      "unit": "г",
+      "match": "Хлопья овсяные Селяночка №3",
+      "url": "https://5ka.ru/catalog/khlopya-zernovye--251C60287/",
+      "size": "350г"
+    },
+    "apple": {
+      "price": 104.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Яблоки Кубанские",
+      "url": "https://5ka.ru/catalog/ovoshchi-frukty--251C54487/",
+      "size": "за 1 кг"
+    },
+    "banana": {
+      "price": 164.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Бананы Global Village",
+      "url": "https://5ka.ru/catalog/frukty-i-yagody--251C58555/",
+      "size": "за 1 кг"
+    },
+    "potato": {
+      "price": 83.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Картофель мытый",
+      "url": "https://5ka.ru/catalog/kartofel--251C39005/",
+      "size": "за 1 кг"
+    },
+    "chicken": {
+      "price": 469.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Филе куриное охлажденное",
+      "url": "https://5ka.ru/tags/kurinoe-file/",
+      "size": "за 1 кг"
+    },
+    "milk": {
+      "price": 74.99,
+      "pack": 900,
+      "unit": "мл",
+      "match": "Молоко Станция Молочная пастеризованное 2.5%",
+      "url": "https://5ka.ru/catalog/moloko-i-muka--251C66276/",
+      "size": "900мл"
+    },
+    "egg": {
+      "price": 146.99,
+      "pack": 10,
+      "unit": "шт",
+      "match": "Яйцо куриное Роскар Экстра СО",
+      "url": "https://5ka.ru/catalog/yaytsa--251C52032/",
+      "size": "10шт"
+    },
+    "curd": {
+      "price": 194.99,
+      "pack": 450,
+      "unit": "г",
+      "match": "Творог Вкуснотеево 5%",
+      "url": "https://5ka.ru/catalog/kislomolochnye-produkty--251C58557/",
+      "size": "450г"
+    },
+    "fish": {
+      "price": 544.99,
+      "pack": 400,
+      "unit": "г",
+      "match": "Минтай Borealis филе блочное без кожи без костей",
+      "url": "https://5ka.ru/catalog/ryba--251C53035/",
+      "size": "400г"
+    },
+    "cookie": {
+      "price": 129.99,
+      "pack": 403,
+      "unit": "г",
+      "match": "Печенье Юбилейное Традиционное",
+      "url": "https://5ka.ru/catalog/sladosti-k-chayu--251C40502/",
+      "size": "403г"
+    }
+  }
+}
