@@ -124,7 +124,7 @@ function basket(plan=s.plan){let out={};for(const x of extraItems())out[x.id]=x.
 const total=(p=s.plan)=>basket(p).reduce((a,b)=>a+(b.price??0),0);
 function generate(){const pool=recipes.map((r,id)=>({...r,id})).filter(allowed);for(const m of s.meals)if(!pool.some(r=>r.type===m)){return 'Нет подходящих рецептов для «'+m+'». Измените ограничения или набор приёмов пищи.'}let best=null,bestScore=Infinity;for(let attempt=0;attempt<150;attempt++){const plan=[],used={};for(const day of [...s.days].sort((a,b)=>a-b))for(const m of s.meals){const candidates=pool.filter(r=>r.type===m).map(r=>{const p={day,meal:m,id:r.id};const cost=total([...plan,p])-total(plan);let score=cost*(attempt%3===0?1:.35)+(used[r.id]||0)*(attempt%3===0?5:45)+(s.style==='Быстро и просто'?r.time*3:0)+Math.random()*100;return{p,score}}).sort((a,b)=>a.score-b.score);const p=candidates[0].p;plan.push(p);used[p.id]=(used[p.id]||0)+1}let price=total(plan),repeat=Object.values(used).reduce((a,b)=>a+(b-1)**2,0),score=(price>s.budget?100000+(price-s.budget)*100:0)+repeat*28+price*.03;if(score<bestScore){bestScore=score;best=plan}}s.plan=best;s.source='local';s.aiNote='';s.checked=[];s.view='plan';s.error='';save();render();return null}
 
-const API_BASE=location.hostname.endsWith('.github.io')?'':location.origin;
+const API_BASE=location.hostname.endsWith('.github.io')?'https://ladno-production.up.railway.app':location.origin;
 let aiBusy=false,aiError='';
 const baseCount=28;
 const equipmentList=['Плита','Духовка','Микроволновка','Блендер','Мультиварка','Аэрогриль'];
