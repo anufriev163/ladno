@@ -1,0 +1,29 @@
+name: Refresh public grocery reference
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: public-price-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node refresh-prices.mjs --test
+      - run: node refresh-prices.mjs
+      - name: Save verified prices
+        run: |
+          if git diff --quiet -- catalog-prices.json; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add catalog-prices.json
+          git commit -m 'Refresh public grocery reference'
+          git push
