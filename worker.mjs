@@ -39,7 +39,7 @@ export class MenuQuota {
  constructor(ctx,env){this.ctx=ctx;this.env=env}
  async fetch(req){
   const data=await req.json(), now=Date.now(),day=new Date(now).toISOString().slice(0,10);
-  const daily=Math.max(1,Math.min(1000,Math.floor(Number(this.env.DAILY_AI_LIMIT)||50)));
+  const daily=Math.max(1,Math.min(200,Math.floor(Number(this.env.DAILY_AI_LIMIT)||50)));
   return this.ctx.storage.transaction(async tx=>{
    let s=await tx.get('state');if(!s||s.day!==day)s={day,used:0,windows:{},requests:{}};
    for(const [k,v] of Object.entries(s.windows))if(now-v.start>=600000)delete s.windows[k];
@@ -70,7 +70,7 @@ export default {
   let data;try{data=await readJSON(req)}catch(e){return send({error:e.message==='size'?'Payload too large':'Invalid JSON'},e.message==='size'?413:400)}
   if(!validInput(data)||data.mode!=='select'||!data.requestId)return send({error:'Invalid profile'},400);
   try{
-   const ip=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(new Date().toISOString().slice(0,10)+'|'+(req.headers.get('CF-Connecting-IP')||'unknown')))),x=>x.toString(16).padStart(2,'0')).join('');
+   const encoder=new TextEncoder();const hashKey=await crypto.subtle.importKey('raw',encoder.encode(env.ANYMODEL_API_KEY),{name:'HMAC',hash:'SHA-256'},false,['sign']);const ip=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',hashKey,encoder.encode(new Date().toISOString().slice(0,10)+'|'+(req.headers.get('CF-Connecting-IP')||'unknown')))),x=>x.toString(16).padStart(2,'0')).join('');
    const quota=env.MENU_QUOTA.get(env.MENU_QUOTA.idFromName('global'));
    const allowed=await quota.fetch('https://quota.internal/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip,id:data.requestId})});
    if(!allowed.ok)return send({error:allowed.status===409?'Duplicate request':'Generation limit reached'},allowed.status===409?409:429);
