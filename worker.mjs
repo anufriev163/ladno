@@ -8,7 +8,7 @@ const validNum=(n,min,max)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=
 const str=(x,n=120)=>typeof x==='string'&&x.length<=n;
 const arr=(x,n=40)=>Array.isArray(x)&&x.length<=n&&x.every(v=>str(v));
 function validInput(d){const p=d?.profile,c=d?.catalog;if(!p||!c||Array.isArray(c)||typeof c!=='object'||Object.keys(c).length<1||Object.keys(c).length>120)return false;
- if(!Number.isInteger(p.adults)||!validNum(p.adults,0,20)||!Number.isInteger(p.children)||!validNum(p.children,0,20)||p.adults+p.children<1||!validNum(p.servings,.25,40)||!validNum(p.budget,100,100000))return false;
+ if(!Number.isInteger(p.adults)||!validNum(p.adults,0,20)||!Number.isInteger(p.children)||!validNum(p.children,0,20)||p.adults+p.children<1||!validNum(p.servings,.25,40)||!validNum(p.budget,0,100000))return false;
  if(!Array.isArray(p.days)||p.days.length<1||p.days.length>7||new Set(p.days).size!==p.days.length||p.days.some(x=>!Number.isInteger(x)||x<0||x>6)||!arr(p.meals,4)||!p.meals.length||new Set(p.meals).size!==p.meals.length||p.meals.some(x=>!meals.has(x)))return false;
  if(!['store','goal','diet','style'].every(k=>str(p[k]))||!['stores','likes','customDislikes','equipment','allergies','dislikes','dislikeNames','pantry'].every(k=>arr(p[k],60)))return false;
  if(!Object.entries(c).every(([k,v])=>knownId(k)&&v&&str(v.name,100)&&!!v.name.trim()&&(validNum(v.price,0.01,100000)||(customId(k)&&v.price===null&&v.package===1))&&validNum(v.package,1,100000)&&['г','мл','шт'].includes(v.unit)&&(!customId(k)||(d.mode==='generate'&&!p.allergies.length&&['Без ограничений','Сбалансированное'].includes(p.diet)&&v.unit==='г'))))return false;
@@ -48,7 +48,7 @@ function validateGenerated(result,data){
   for(const [id,n] of Object.entries(recipes[x.id].ingredients)){sum[id]=(sum[id]||0)+n;d[id]=(d[id]||0)+n;if(sum[id]>(p.quantityLimits[id]||0)||d[id]>(p.dailyQuantityLimits[id]||0))return null}
   plan.push({day:x.day,meal:x.meal,id:x.id});
  }
- let cost=0;for(const [id,n] of Object.entries(sum)){if(p.pantry.includes(id))continue;const f=data.catalog[id];if(f.price===null)continue;cost+=Math.ceil(n*p.servings/f.package)*f.package*f.price/(f.unit==='шт'?1:1000)}
+ let cost=0;for(const [id,n] of Object.entries(sum)){if(p.pantry.includes(id))continue;const f=data.catalog[id];if(f.price===null){if(p.budget===0)return null;continue;}cost+=Math.ceil(n*p.servings/f.package)*f.package*f.price/(f.unit==='шт'?1:1000)}
  if(cost>p.budget+.01)return null;
  return {recipes,plan,note:typeof result.note==='string'?result.note.slice(0,700):''}
 }
@@ -91,19 +91,33 @@ export default {
    return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600','Vary':'Origin'}})
   }
   const ready=!!env.ANYMODEL_API_KEY&&!!env.MENU_QUOTA;
-  if(req.method==='GET'&&['/health','/version'].includes(path))return send({ready,version:'cloudflare-v3',api:3,capabilities:['generate-recipes','select-recipes','custom-products'],foodIds:[...ids]});
+  if(req.method==='GET'&&['/health','/version'].includes(path))return send({ready,version:'cloudflare-v4',api:3,capabilities:['generate-recipes','select-recipes','custom-products','product-search','diagnostics','zero-budget'],foodIds:[...ids]});
+  if(path==='/api/products'&&req.method==='GET'){
+   if(origin!==ORIGIN)return send({error:'Origin required'},403);
+   const q=(new URL(req.url).searchParams.get('q')||'').trim();
+   if(q.length<3||q.length>70||!/^[\p{L}\p{N} \-]+$/u.test(q))return send({suggestions:[]});
+   const url=new URL('https://world.openfoodfacts.org/api/v3/taxonomy_suggestions');
+   url.search=new URLSearchParams({tagtype:'ingredients',lc:'ru',string:q,limit:'25'}).toString();
+   try{
+    const cached=await caches.default.match(new Request(url.toString()));if(cached){const data=await cached.json();return send(data)}
+    const response=await fetch(url.toString(),{headers:{'User-Agent':'Nalegke/1.0 (https://anufriev163.github.io/ladno/)'},signal:AbortSignal.timeout(6000),redirect:'error'});
+    if(!response.ok)return send({error:'Catalog temporarily unavailable'},503);
+    const data=await response.json();const suggestions=[...new Set((Array.isArray(data.suggestions)?data.suggestions:[]).filter(x=>typeof x==='string'&&x.length<=70&&/[а-яё]/i.test(x)&&!/[<>]/.test(x)))].slice(0,25);
+    const payload={suggestions};await caches.default.put(new Request(url.toString()),new Response(JSON.stringify(payload),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age=86400'}})).catch(()=>{});return send(payload)
+   }catch{return send({error:'Catalog temporarily unavailable'},503)}
+  }
   if(path!=='/api/menu'||req.method!=='POST')return send({error:'Not found'},404);
   if(origin!==ORIGIN)return send({error:'Origin required'},403);
-  if(!ready)return send({error:'Service unavailable'},503);
+  if(!ready)return send({error:'Service unavailable',code:'NOT_CONFIGURED'},503);
   if(!/^application\/json(?:\s*;|$)/i.test(req.headers.get('Content-Type')||''))return send({error:'JSON required'},415);
   let data;try{data=await readJSON(req)}catch(e){return send({error:e.message==='size'?'Payload too large':'Invalid JSON'},e.message==='size'?413:400)}
-  if(!validInput(data)||!['select','generate'].includes(data.mode)||!data.requestId)return send({error:'Invalid profile'},400);
+  if(!validInput(data)||!['select','generate'].includes(data.mode)||!data.requestId)return send({error:'Invalid profile',code:'INVALID_PROFILE'},400);
   try{
    const encoder=new TextEncoder();const hashKey=await crypto.subtle.importKey('raw',encoder.encode(env.ANYMODEL_API_KEY),{name:'HMAC',hash:'SHA-256'},false,['sign']);const ip=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',hashKey,encoder.encode(new Date().toISOString().slice(0,10)+'|'+(req.headers.get('CF-Connecting-IP')||'unknown')))),x=>x.toString(16).padStart(2,'0')).join('');
    const quota=env.MENU_QUOTA.get(env.MENU_QUOTA.idFromName('global'));
    const allowed=await quota.fetch('https://quota.internal/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip,id:data.requestId})});
-   if(!allowed.ok)return send({error:allowed.status===409?'Duplicate request':'Generation limit reached'},allowed.status===409?409:429);
-  }catch{return send({error:'Service unavailable'},503)}
+   if(!allowed.ok)return send({error:allowed.status===409?'Duplicate request':'Generation limit reached',code:allowed.status===409?'DUPLICATE':'DAILY_LIMIT'},allowed.status===409?409:429);
+  }catch{return send({error:'Service unavailable',code:'QUOTA_UNAVAILABLE'},503)}
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.max(1000,Math.min(data.mode==='select'?25000:100000,Number(data.timeoutMs)||95000)));
   const abort=()=>controller.abort();req.signal.addEventListener('abort',abort,{once:true});
   try{
@@ -116,14 +130,14 @@ export default {
    const catalog=Object.fromEntries(Object.entries(data.catalog).map(([k,v])=>[k,{name:v.name,price:v.price,package:v.package,unit:v.unit}]));
    const candidates=(data.candidates||[]).map(x=>({id:x.id,name:x.name,type:x.type,time:x.time,ingredients:x.ingredients}));
    const upstream=await fetch('https://anymodel.org/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+env.ANYMODEL_API_KEY},body:JSON.stringify({model:'ds/deepseek-v4-flash',messages:[{role:'system',content:data.mode==='generate'?generatePrompt:compactPrompt},{role:'user',content:JSON.stringify({profile,catalog,...(data.mode==='select'?{candidates}:{}),correction:String(data.correction||'').slice(0,500)})}],max_tokens:data.mode==='generate'?10000:2000,stream:false}),signal:controller.signal,redirect:'error'});
-   if(!upstream.ok)return send({error:'Generation temporarily unavailable'},502);
+   if(!upstream.ok)return send({error:'Generation temporarily unavailable',code:upstream.status===401||upstream.status===403?'PROVIDER_AUTH':upstream.status===402?'PROVIDER_BALANCE':upstream.status===429?'PROVIDER_LIMIT':upstream.status===404?'MODEL_UNAVAILABLE':'PROVIDER_HTTP',upstreamStatus:upstream.status},502);
    const out=await upstream.json(),content=out?.choices?.[0]?.message?.content;
-   if(typeof content!=='string'||content.length>100000)return send({error:'Empty result'},502);
-   let result;try{result=JSON.parse(content.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}catch{return send({error:'Invalid model response'},502)}
-   if(data.mode==='generate'){const checked=validateGenerated(result,data);if(!checked)return send({error:'Invalid model response'},422);return send({content:JSON.stringify(checked)})}
+   if(typeof content!=='string'||content.length>100000)return send({error:'Empty result',code:'MODEL_EMPTY'},422);
+   let result;try{result=JSON.parse(content.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}catch{return send({error:'Invalid model response',code:'MODEL_JSON'},422)}
+   if(data.mode==='generate'){const checked=validateGenerated(result,data);if(!checked)return send({error:'Invalid model response',code:'MODEL_PLAN'},422);return send({content:JSON.stringify(checked)})}
    const options=new Map(candidates.map(x=>[x.id,x.type])),seen=new Set();
    if(!Array.isArray(result?.plan)||result.plan.length!==p.days.length*p.meals.length||!result.plan.every(x=>{if(!x||!p.days.includes(x.day)||!p.meals.includes(x.meal)||options.get(x.id)!==x.meal)return false;const k=x.day+'|'+x.meal;if(seen.has(k))return false;seen.add(k);return true}))return send({error:'Invalid model response'},502);
    return send({content:JSON.stringify({plan:result.plan.map(({day,meal,id})=>({day,meal,id})),note:typeof result.note==='string'?result.note.slice(0,700):''})});
-  }catch{return send({error:'Generation temporarily unavailable'},502)}finally{clearTimeout(timer);req.signal.removeEventListener('abort',abort)}
+  }catch{return send({error:'Generation temporarily unavailable',code:controller.signal.aborted?'TIMEOUT':'PROVIDER_NETWORK'},502)}finally{clearTimeout(timer);req.signal.removeEventListener('abort',abort)}
  }
 };
