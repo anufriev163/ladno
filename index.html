@@ -528,7 +528,9 @@ for(let attempt=0;attempt<85;attempt++){
 if(!best)return Number.isFinite(lowest)?'Не удалось уложиться в '+money(s.budget)+'. Самый доступный найденный вариант — '+money(lowest)+'. Измените бюджет или состав покупок.':'Не удалось подобрать меню с этими ограничениями. Измените набор блюд или продуктов.';
 recipes.splice(builtinCount);s.plan=applyWishes(best);s.aiRecipes=recipes.slice(builtinCount);s.editingQuiz=false;s.source='local';s.aiNote='';s.checked=[];s.view=generationTab||'shopping';s.error='';save();if(!aiBusy)render();return null}
 
-const API_BASE=location.hostname.endsWith('.github.io')?'https://ladno-production.up.railway.app':location.origin;
+const CLOUD_API='https://ladno.anufrievdenis1996-4f6.workers.dev';
+const RAILWAY_API='https://ladno-production.up.railway.app';
+const API_BASES=[CLOUD_API,...new Set([location.hostname.endsWith('.github.io')?RAILWAY_API:location.origin,RAILWAY_API])].filter((v,i,a)=>a.indexOf(v)===i);
 let aiBusy=false,aiError='',generationTab='',generationError='',generationToken=0,generationController=null,generationStartedAt=0,generationStatusTimer=null;
 function cancelGeneration(){clearTimeout(generationStatusTimer);generationToken++;generationController?.abort();generationController=null;aiBusy=false;generationTab='';generationError=''}
 function requestId(){return 'menu_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2)+'_'+Math.random().toString(36).slice(2)}
@@ -564,8 +566,17 @@ async function refreshPublicPrices(signal){
 }
 const baseLimits=(o,ids=originalFoodIds)=>Object.fromEntries(Object.entries(o).filter(([k])=>ids.has(k)));
 async function serverCapability(signal){
- try{const r=await timedFetch(API_BASE+'/version',{cache:'no-store',credentials:'omit',redirect:'error'},1800,signal);if(r.ok){const v=await r.json();if(v?.api>=3&&v.ready===true&&v.capabilities?.includes('generate-recipes')&&Array.isArray(v.foodIds))return {mode:'generate',foodIds:new Set(v.foodIds)};if(v?.ready===false)return {mode:'local'}}}catch{}
- return {mode:'legacy',foodIds:originalFoodIds};
+ for(const base of API_BASES){
+  if(signal?.aborted)return {mode:'local'};
+  try{
+   const r=await timedFetch(base+'/version',{cache:'no-store',credentials:'omit',redirect:'error'},3500,signal);
+   if(!r.ok)continue;const v=await r.json();
+   if(v?.ready!==true)continue;
+   if(v.api>=3&&v.capabilities?.includes('generate-recipes')&&Array.isArray(v.foodIds)&&v.foodIds.length)return {mode:'generate',foodIds:new Set(v.foodIds),base};
+   if(base!==CLOUD_API&&(v.api===2||v.api===3))return {mode:'legacy',foodIds:originalFoodIds,base};
+  }catch{}
+ }
+ return {mode:'local'};
 }
 function decodeSelection(raw,candidates){
  if(!raw||!Array.isArray(raw.plan)||raw.plan.length!==slots())throw Error('ИИ вернул неполный план.');
@@ -584,9 +595,9 @@ function buildAIRequest(correction='',timeout=100000,capability={mode:'legacy',f
 }
 async function requestAI(correction='',timeout=100000,signal,capability){
  const payload=buildAIRequest(correction,timeout,capability);let resp;
- try{resp=await timedFetch(API_BASE+'/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'},Math.max(1000,timeout),signal)}
+ try{resp=await timedFetch(capability.base+'/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'},Math.max(1000,timeout),signal)}
  catch(e){throw Error('Сервис составления меню временно недоступен.')}
- if(!resp.ok)throw Error('Сервис составления меню временно недоступен.');
+ if(!resp.ok){if(resp.status===422)throw Error('Некорректный ответ ИИ: проверь бюджет, граммовки и все приёмы пищи.');if(resp.status===429)throw Error('Лимит запросов к ИИ достигнут. Попробуйте позже.');throw Error('Сервис составления меню временно недоступен.');}
  const data=await resp.json();const answer=data?.content;
  if(typeof answer!=='string')throw Error('Не удалось составить меню.');
  let raw;try{raw=JSON.parse(answer.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}catch{throw Error('ИИ вернул ответ не в формате JSON.')}
