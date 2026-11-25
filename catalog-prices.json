@@ -1,6 +1,6 @@
 {
-  "source": "5ka.ru public catalog",
-  "observed": "2026-11-24",
+  "source": "5ka.ru public catalog; regional availability and checkout prices not verified",
+  "observed": "2026-11-25",
   "rows": {
     "oats": {
       "price": 54.99,
@@ -8,7 +8,9 @@
       "unit": "г",
       "match": "Хлопья овсяные Селяночка №3",
       "url": "https://5ka.ru/catalog/khlopya-zernovye--251C60287/",
-      "size": "350г"
+      "size": "350г",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "apple": {
       "price": 104.99,
@@ -16,7 +18,9 @@
       "unit": "г",
       "match": "Яблоки Кубанские",
       "url": "https://5ka.ru/catalog/ovoshchi-frukty--251C54487/",
-      "size": "за 1 кг"
+      "size": "за 1 кг",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "banana": {
       "price": 164.99,
@@ -24,7 +28,9 @@
       "unit": "г",
       "match": "Бананы Global Village",
       "url": "https://5ka.ru/catalog/frukty-i-yagody--251C58555/",
-      "size": "за 1 кг"
+      "size": "за 1 кг",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "potato": {
       "price": 83.99,
@@ -32,7 +38,9 @@
       "unit": "г",
       "match": "Картофель мытый",
       "url": "https://5ka.ru/catalog/kartofel--251C39005/",
-      "size": "за 1 кг"
+      "size": "за 1 кг",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "chicken": {
       "price": 469.99,
@@ -40,15 +48,20 @@
       "unit": "г",
       "match": "Филе куриное охлажденное",
       "url": "https://5ka.ru/tags/kurinoe-file/",
-      "size": "за 1 кг"
+      "size": "за 1 кг",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "milk": {
       "price": 74.99,
       "pack": 900,
       "unit": "мл",
-      "match": "Молоко Станция Молочная пастеризованное 2.5%",
+      "match": "Молоко Станция Молочная пастеризованное 2.5% БЗМЖ",
       "url": "https://5ka.ru/catalog/moloko-i-muka--251C66276/",
-      "size": "900мл"
+      "size": "900мл",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
     },
     "egg": {
       "price": 146.99,
@@ -56,7 +69,9 @@
       "unit": "шт",
       "match": "Яйцо куриное Роскар Экстра СО",
       "url": "https://5ka.ru/catalog/yaytsa--251C52032/",
-      "size": "10шт"
+      "size": "10шт",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "curd": {
       "price": 194.99,
@@ -64,7 +79,9 @@
       "unit": "г",
       "match": "Творог Вкуснотеево 5%",
       "url": "https://5ka.ru/catalog/kislomolochnye-produkty--251C58557/",
-      "size": "450г"
+      "size": "450г",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "fish": {
       "price": 544.99,
@@ -72,7 +89,9 @@
       "unit": "г",
       "match": "Минтай Borealis филе блочное без кожи без костей",
       "url": "https://5ka.ru/catalog/ryba--251C53035/",
-      "size": "400г"
+      "size": "400г",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
     },
     "cookie": {
       "price": 129.99,
@@ -80,7 +99,219 @@
       "unit": "г",
       "match": "Печенье Юбилейное Традиционное",
       "url": "https://5ka.ru/catalog/sladosti-k-chayu--251C40502/",
-      "size": "403г"
+      "size": "403г",
+      "observed": "2026-11-24",
+      "origin": "legacy_snapshot"
+    },
+    "rice": {
+      "price": 119.99,
+      "pack": 800,
+      "unit": "г",
+      "match": "Рис Global Village Для плова",
+      "url": "https://5ka.ru/catalog/ris--251C53129/",
+      "size": "800г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "buck": {
+      "price": 125.99,
+      "pack": 900,
+      "unit": "г",
+      "match": "Гречка ядрица Селяночка быстроразваривающаяся пропаренная",
+      "url": "https://5ka.ru/catalog/grechka--251C53128/",
+      "size": "900г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "pasta": {
+      "price": 89.99,
+      "pack": 450,
+      "unit": "г",
+      "match": "Изделие макаронное Maltagliati Pipe Rigate",
+      "url": "https://5ka.ru/catalog/makarony--251C53127/",
+      "size": "450г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "carrot": {
+      "price": 72.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Морковь мытая",
+      "url": "https://5ka.ru/catalog/morkov-svyokla--251C51650/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "beet": {
+      "price": 84.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Свекла мытая фасовка",
+      "url": "https://5ka.ru/catalog/morkov-svyokla--251C51650/",
+      "size": "1кг",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "mushroom": {
+      "price": 169.99,
+      "pack": 400,
+      "unit": "г",
+      "match": "Шампиньоны Global Village",
+      "url": "https://5ka.ru/catalog/ovoshchi--251C70921/",
+      "size": "400г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "cucumber": {
+      "price": 289.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Огурцы короткоплодные",
+      "url": "https://5ka.ru/catalog/svezhie-ovoshchi--251C58552/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "tomato": {
+      "price": 199.99,
+      "pack": 600,
+      "unit": "г",
+      "match": "Томаты розовые",
+      "url": "https://5ka.ru/catalog/svezhie-ovoshchi--251C58552/",
+      "size": "600г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "millet": {
+      "price": 59.99,
+      "pack": 800,
+      "unit": "г",
+      "match": "Пшено Селяночка шлифованное",
+      "url": "https://5ka.ru/catalog/psheno--251C53133/",
+      "size": "800г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "lentil": {
+      "price": 89.99,
+      "pack": 450,
+      "unit": "г",
+      "match": "Чечевица Global Village красная",
+      "url": "https://5ka.ru/catalog/bobovye--251C66447/",
+      "size": "450г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "flour": {
+      "price": 69.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Мука Селяночка Пшеничная хлебопекарная высший сорт",
+      "url": "https://5ka.ru/catalog/moloko-i-muka--251C66276/",
+      "size": "1кг",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "oil": {
+      "price": 99.99,
+      "pack": 900,
+      "unit": "мл",
+      "match": "Масло Красная цена подсолнечное рафинированное",
+      "url": "https://5ka.ru/catalog/podsolnechnoe-maslo--251C53469/",
+      "size": "900мл",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "turkey": {
+      "price": 339.99,
+      "pack": 500,
+      "unit": "г",
+      "match": "Филе Вкус & Польза малое из мяса индейки",
+      "url": "https://5ka.ru/catalog/indeyka--251C52254/",
+      "size": "500г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "pork": {
+      "price": 359.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Окорок свиной бескостный охлаждённый",
+      "url": "https://5ka.ru/catalog/svinina--251C39018/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "kefir": {
+      "price": 109.99,
+      "pack": 900,
+      "unit": "мл",
+      "match": "Кефир Из Молока Нашей Дойки 3.2-4% БЗМЖ",
+      "url": "https://5ka.ru/catalog/kefir--251C51995/",
+      "size": "900мл",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "yogurt": {
+      "price": 104.99,
+      "pack": 250,
+      "unit": "г",
+      "match": "Йогурт Teos греческий 2%",
+      "url": "https://5ka.ru/catalog/yogurt--251C66453/",
+      "size": "250г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "cheese": {
+      "price": 129.99,
+      "pack": 150,
+      "unit": "г",
+      "match": "Сыр Выручай Российский полутвёрдый нарезка слайсы 45%",
+      "url": "https://5ka.ru/catalog/syry--251C39635/",
+      "size": "150г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "bread": {
+      "price": 70.99,
+      "pack": 400,
+      "unit": "г",
+      "match": "Хлеб Коломенское Бородинский нарезка",
+      "url": "https://5ka.ru/catalog/khleb-lavash--251C39022/",
+      "size": "400г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
+    },
+    "onion": {
+      "price": 78.99,
+      "pack": 600,
+      "unit": "г",
+      "match": "Лук репчатый",
+      "url": "https://5ka.ru/catalog/luk-chesnok--251C51651/",
+      "size": "600г",
+      "observed": "2026-11-25",
+      "origin": "public_catalog_search",
+      "policy": "regular_price"
     }
-  }
+  },
+  "schema": 2
 }
