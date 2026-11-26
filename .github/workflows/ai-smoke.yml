@@ -1,0 +1,72 @@
+name: AI connectivity smoke test
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/ai-smoke.yml']
+permissions:
+  contents: write
+concurrency:
+  group: ai-connectivity-smoke
+  cancel-in-progress: false
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run one synthetic request
+        shell: bash
+        run: |
+          mkdir -p diagnostics
+          node --input-type=module <<'NODE'
+          import {writeFile} from 'node:fs/promises';
+          const api='https://ladno.anufrievdenis1996-4f6.workers.dev';
+          const origin='https://anufriev163.github.io';
+          const report={checkedAt:new Date().toISOString(),runId:process.env.GITHUB_RUN_ID,result:'not_tested'};
+          const read=async(path,options={},ms=12000)=>{
+            const start=Date.now();
+            const r=await fetch(api+path,{...options,redirect:'error',headers:{Origin:origin,...options.headers},signal:AbortSignal.timeout(ms)});
+            let data=null;try{data=await r.json()}catch{}
+            return {status:r.status,ok:r.ok,data,cors:r.headers.get('access-control-allow-origin')===origin,ms:Date.now()-start};
+          };
+          const safeCode=v=>typeof v==='string'&&/^[A-Z0-9_]{1,50}$/.test(v)?v:null;
+          try{
+            const v=await read('/version');
+            report.version={status:v.status,cors:v.cors,ready:v.data?.ready===true,api:Number.isInteger(v.data?.api)?v.data.api:null,version:typeof v.data?.version==='string'&&/^cloudflare-v[0-9]+$/.test(v.data.version)?v.data.version:null};
+            if(!v.ok||!v.cors||!v.data?.ready||!v.data?.capabilities?.includes('generate-recipes')){report.result='version_not_ready'}
+            else{
+              const pre=await read('/api/menu',{method:'OPTIONS',headers:{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'}});
+              report.preflight={status:pre.status,cors:pre.cors};
+              if(!pre.ok||!pre.cors){report.result='cors_preflight_failed'}
+              else{
+                const catalog={rice:{name:'Рис',price:150,package:800,unit:'г'},chicken:{name:'Куриное филе',price:450,package:500,unit:'г'},carrot:{name:'Морковь',price:80,package:1000,unit:'г'},oil:{name:'Растительное масло',price:150,package:500,unit:'мл'}};
+                const limits={rice:120,chicken:250,carrot:180,oil:20};
+                const req={mode:'generate',catalog,profile:{personal:null,store:'Пятёрочка',stores:['Пятёрочка'],goal:'Обычное питание',likes:[],customDislikes:[],adults:1,children:0,servings:1,days:[0],meals:['Обед'],equipment:['Плита'],diet:'Без ограничений',style:'Разнообразие',allergies:[],dislikes:[],dislikeNames:[],pantry:[],budget:1500,weeklyExtras:[],weeklyExtrasKnownCost:0,weeklyExtrasUnknownPrices:0,wishes:[],quantityLimits:limits,dailyQuantityLimits:limits,servingQuantityLimits:limits},correction:'',timeoutMs:65000,requestId:'check_'+Date.now().toString(36)+'_'+process.env.GITHUB_RUN_ID};
+                const r=await read('/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(req)},75000);
+                report.generation={status:r.status,cors:r.cors,ms:r.ms,code:safeCode(r.data?.code),upstreamStatus:Number.isInteger(r.data?.upstreamStatus)?r.data.upstreamStatus:null};
+                if(!r.ok||!r.cors)report.result='generation_http_error';
+                else{
+                  let raw;try{raw=JSON.parse(r.data?.content)}catch{}
+                  const x=raw?.plan?.[0],recipe=raw?.recipes?.[x?.id];
+                  let cost=0,valid=Array.isArray(raw?.plan)&&raw.plan.length===1&&x.day===0&&x.meal==='Обед'&&Number.isInteger(x.id)&&recipe?.type==='Обед'&&typeof recipe?.name==='string'&&typeof recipe?.method==='string'&&recipe?.ingredients&&Array.isArray(recipe.equipment)&&recipe.equipment.every(e=>req.profile.equipment.includes(e));
+                  if(valid){const entries=Object.entries(recipe.ingredients);valid=entries.length>0&&entries.every(([id,n])=>{if(!Object.hasOwn(catalog,id)||!Number.isInteger(n)||n<1||n>limits[id])return false;const f=catalog[id];cost+=Math.ceil(n/f.package)*f.package*f.price/1000;return true})&&cost<=1500}
+                  report.result=valid?'passed':'invalid_recipe';
+                  if(valid)report.generation.fixtureCost=Math.round(cost*100)/100;
+                }
+              }
+            }
+          }catch(e){report.result=e.name==='TimeoutError'||e.name==='AbortError'?'timeout':'network_error';report.networkCode=safeCode(e.cause?.code)}
+          const output=JSON.stringify(report,null,2)+'\n';
+          await writeFile('diagnostics/ai-smoke-result.json',output);
+          console.log(output);
+          NODE
+      - name: Save non-sensitive diagnostic result
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/ai-smoke-result.json
+          git commit -m 'Record AI connectivity smoke test'
+          git pull --rebase origin main
+          git push origin HEAD:main
