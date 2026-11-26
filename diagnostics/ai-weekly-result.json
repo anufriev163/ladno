@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-11-26T15:30:02.464Z",
-  "runId": "45849677821",
-  "commit": "8bdc482abd8f9517c250b569e3cdf95f182ef39f",
+  "checkedAt": "2026-11-26T15:33:49.049Z",
+  "runId": "45850287532",
+  "commit": "b54c9ea9d3c7653e789c3098967320ef1adeedb5",
   "fixture": {
     "adults": 1,
     "days": 7,
@@ -16,7 +16,7 @@
       "Плита"
     ]
   },
-  "result": "passed",
+  "result": "acceptance_error",
   "version": {
     "status": 200,
     "ready": true,
@@ -38,7 +38,7 @@
       "requestBytes": 4415,
       "status": 200,
       "cors": true,
-      "ms": 8167,
+      "ms": 7825,
       "code": null,
       "reason": null,
       "reasoningDisabled": true,
@@ -49,10 +49,10 @@
         1
       ],
       "catalogSize": 28,
-      "requestBytes": 4517,
+      "requestBytes": 4501,
       "status": 200,
       "cors": true,
-      "ms": 7423,
+      "ms": 7770,
       "code": null,
       "reason": null,
       "reasoningDisabled": true,
@@ -63,24 +63,10 @@
         2
       ],
       "catalogSize": 28,
-      "requestBytes": 4515,
-      "status": 422,
-      "cors": true,
-      "ms": 7014,
-      "code": "MODEL_PLAN",
-      "reason": "RECIPE_STEPS",
-      "ingredient": null,
-      "max": null
-    },
-    {
-      "days": [
-        2
-      ],
-      "catalogSize": 28,
-      "requestBytes": 4737,
+      "requestBytes": 4514,
       "status": 200,
       "cors": true,
-      "ms": 6511,
+      "ms": 8587,
       "code": null,
       "reason": null,
       "reasoningDisabled": true,
@@ -91,10 +77,10 @@
         3
       ],
       "catalogSize": 28,
-      "requestBytes": 4524,
+      "requestBytes": 4523,
       "status": 200,
       "cors": true,
-      "ms": 11760,
+      "ms": 6806,
       "code": null,
       "reason": null,
       "reasoningDisabled": true,
@@ -105,80 +91,30 @@
         4
       ],
       "catalogSize": 28,
-      "requestBytes": 4508,
-      "status": 200,
-      "cors": true,
-      "ms": 12508,
-      "code": null,
-      "reason": null,
-      "reasoningDisabled": true,
-      "serverValidation": true
-    },
-    {
-      "days": [
-        5
-      ],
-      "catalogSize": 28,
-      "requestBytes": 4551,
+      "requestBytes": 4528,
       "status": 422,
       "cors": true,
-      "ms": 14585,
+      "ms": 16823,
       "code": "MODEL_PLAN",
-      "reason": "RECIPE_STEPS",
+      "reason": "INGREDIENT_QUANTITY",
+      "ingredient": "rice",
+      "max": 120
+    },
+    {
+      "days": [
+        4
+      ],
+      "catalogSize": 28,
+      "requestBytes": 4701,
+      "status": 429,
+      "cors": true,
+      "ms": 255,
+      "code": "DAILY_LIMIT",
+      "reason": null,
       "ingredient": null,
       "max": null
-    },
-    {
-      "days": [
-        5
-      ],
-      "catalogSize": 28,
-      "requestBytes": 4773,
-      "status": 200,
-      "cors": true,
-      "ms": 21156,
-      "code": null,
-      "reason": null,
-      "reasoningDisabled": true,
-      "serverValidation": true
-    },
-    {
-      "days": [
-        6
-      ],
-      "catalogSize": 28,
-      "requestBytes": 4550,
-      "status": 422,
-      "cors": true,
-      "ms": 12356,
-      "code": "MODEL_PLAN",
-      "reason": "RECIPE_STEPS",
-      "ingredient": null,
-      "max": null
-    },
-    {
-      "days": [
-        6
-      ],
-      "catalogSize": 28,
-      "requestBytes": 4771,
-      "status": 200,
-      "cors": true,
-      "ms": 6542,
-      "code": null,
-      "reason": null,
-      "reasoningDisabled": true,
-      "serverValidation": true
     }
   ],
-  "client": {
-    "slots": 21,
-    "uniqueRecipes": 21,
-    "cost": 2462.77,
-    "missingPrices": 0,
-    "items": 17,
-    "planValid": true,
-    "restrictionsVerified": true
-  },
-  "durationMs": 108046
+  "durationMs": 48076,
+  "error": "DAILY_LIMIT"
 }
