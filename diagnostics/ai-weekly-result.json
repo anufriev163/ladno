@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-11-26T10:19:47.631Z",
-  "runId": "45800282269",
-  "commit": "187922d5d5dd33c7adb560b0a139ed63d5f93ebe",
+  "checkedAt": "2026-11-26T10:25:19.153Z",
+  "runId": "45801157168",
+  "commit": "604d384ac123c1c6d570c64a7ebad3d03dcab88c",
   "fixture": {
     "adults": 1,
     "days": 7,
@@ -12,8 +12,9 @@
   "version": {
     "status": 200,
     "ready": true,
-    "version": "cloudflare-v6"
+    "version": "cloudflare-v7"
   },
+  "expectedVersion": "cloudflare-v7",
   "request": {
     "valid": true,
     "catalogSize": 63,
@@ -26,13 +27,25 @@
         0
       ],
       "catalogSize": 42,
-      "requestBytes": 6208,
-      "status": 502,
+      "requestBytes": 6209,
+      "status": 200,
       "cors": true,
-      "ms": 92783,
-      "code": "TIMEOUT"
+      "ms": 7367,
+      "code": null,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        1
+      ],
+      "catalogSize": 42,
+      "requestBytes": 6209,
+      "status": 422,
+      "cors": true,
+      "ms": 7854,
+      "code": "MODEL_PLAN"
     }
   ],
-  "durationMs": 92790,
-  "error": "TIMEOUT"
+  "durationMs": 15228,
+  "error": "MODEL_PLAN"
 }
