@@ -85,7 +85,13 @@ jobs:
                 const catalog={rice:{name:'Рис',price:150,package:800,unit:'г'},chicken:{name:'Куриное филе',price:450,package:500,unit:'г'},carrot:{name:'Морковь',price:80,package:1000,unit:'г'},oil:{name:'Растительное масло',price:150,package:500,unit:'мл'}};
                 const limits={rice:120,chicken:250,carrot:180,oil:20};
                 const req={mode:'generate',recipeSteps:true,catalog,profile:{personal:null,store:'Пятёрочка',stores:['Пятёрочка'],goal:'Обычное питание',likes:[],customDislikes:[],adults:1,children:0,servings:1,days:[0],meals:['Обед'],equipment:['Плита'],diet:'Без ограничений',style:'Разнообразие',allergies:[],dislikes:[],dislikeNames:[],pantry:[],budget:1500,weeklyExtras:[],weeklyExtrasKnownCost:0,weeklyExtrasUnknownPrices:0,wishes:[],quantityLimits:limits,dailyQuantityLimits:limits,servingQuantityLimits:limits},correction:'',timeoutMs:65000,requestId:'check_'+Date.now().toString(36)+'_'+process.env.GITHUB_RUN_ID};
-                const r=await read('/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(req)},75000);
+                const generate=()=>read('/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(req)},75000);
+                let r=await generate();
+                if(r.status===422){
+                  report.firstRejection=safeCode(r.data?.reason)||safeCode(r.data?.code);
+                  req.requestId+='_retry';req.correction='Используй только ключи из catalog. Укажи все продукты в steps и выбери действия, доступные на плите.';
+                  r=await generate();
+                }
                 report.generation={status:r.status,cors:r.cors,ms:r.ms,code:safeCode(r.data?.code),reason:safeCode(r.data?.reason),upstreamStatus:Number.isInteger(r.data?.upstreamStatus)?r.data.upstreamStatus:null,stage:['fetch','decode','processing'].includes(r.data?.stage)?r.data.stage:null};
                 if(!r.ok||!r.cors)report.result='generation_http_error';
                 else{

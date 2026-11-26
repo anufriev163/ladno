@@ -32,4 +32,11 @@ test('allergy profile only receives instructions built from checked ingredients'
  assert.equal(plan.recipes[0].ingredients.rice,120);
  assert.equal(plan.recipes[0].method,'Отварите до полной готовности: рис, вода.');
  assert.equal(plan.note,'');
+
+ modelRecipe={...recipe,steps:[{action:'bake',ids:['rice']}]};
+ response=await fetchMenu();
+ assert.equal(response.status,200);
+ const repaired=JSON.parse((await response.json()).content).recipes[0];
+ assert.deepEqual(repaired.equipment,['Плита']);
+ assert.deepEqual(repaired.steps,[{action:'boil',ids:['rice','water']},{action:'serve',ids:['rice']}]);
 });

@@ -6,6 +6,27 @@ const generatePrompt="Ты составляешь новые домашние р
 const cookingActions={wash:'Промойте',chop:'Нарежьте',grate:'Натрите',mix:'Смешайте',blend:'Измельчите блендером',boil:'Отварите до полной готовности',stew:'Потушите до полной готовности',fry:'Обжарьте до полной готовности',bake:'Запеките до полной готовности',microwave:'Приготовьте в микроволновке до полной готовности',serve:'Подайте вместе'};
 const cookingEquipment={boil:['Плита','Мультиварка'],stew:['Плита','Мультиварка'],fry:['Плита','Мультиварка','Аэрогриль'],bake:['Духовка','Мультиварка','Аэрогриль'],microwave:['Микроволновка'],blend:['Блендер']};
 const structuredRecipes=data=>data.recipeSteps===true||data.profile.allergies.length>0;
+function safeDefaultSteps(ingredients,equipment){
+ const ids=Object.keys(ingredients),hot=ids.filter(heatRequired);
+ if(!hot.length)return [{action:'serve',ids}];
+ const canCook=action=>cookingEquipment[action].some(x=>equipment.includes(x));
+ if(canCook('boil')){
+  const grains=hot.filter(id=>['rice','buck','pasta','lentil','millet','potato'].includes(id)||expandedCatalog[id]?.heat&&['Киноа','Булгур','Кускус'].includes(expandedCatalog[id].name));
+  const rest=hot.filter(id=>!grains.includes(id));
+  const steps=[];
+  if(grains.length)steps.push({action:'boil',ids:[...grains,'water']});
+  if(rest.includes('flour'))steps.push({action:'mix',ids:['flour','water']});
+  if(rest.length)steps.push({action:rest.includes('flour')?'fry':'stew',ids:[...rest,'water']});
+  steps.push({action:'serve',ids});
+  return steps;
+ }
+ const action=['bake','microwave'].find(canCook);
+ if(!action)return [];
+ return [...(hot.includes('flour')?[{action:'mix',ids:['flour','water']}]:[]),{action,ids:[...hot,'water']},{action:'serve',ids}];
+}
+function hasUndeclaredStepIngredient(steps,ingredients){
+ return Array.isArray(steps)&&steps.some(step=>Array.isArray(step?.ids)&&step.ids.some(id=>typeof id==='string'&&id!=='water'&&!Object.hasOwn(ingredients,id)));
+}
 function renderCookingSteps(recipe,catalog,ingredients,availableEquipment){
  if(!Array.isArray(recipe.steps)||recipe.steps.length<1||recipe.steps.length>6)return null;
  const used=new Set(),cooked=new Set(),equipment=new Set(),lines=[];
@@ -136,14 +157,21 @@ function validateGenerated(result,data,reject=()=>null){
    if(!Number.isInteger(amount)||!validNum(amount,1,max))return reject('INGREDIENT_QUANTITY',{ingredient:detail,max});
   }
   const ingredients=Object.fromEntries(entries);
-  const instructions=structured?renderCookingSteps(r,data.catalog,ingredients,p.equipment):r;
+  let steps=r.steps;
+  if(structured&&hasUndeclaredStepIngredient(steps,ingredients))return reject('RECIPE_STEPS');
+  let instructions=structured?renderCookingSteps(r,data.catalog,ingredients,p.equipment):r,usedDefaultSteps=false;
+  if(structured&&!instructions){
+   steps=safeDefaultSteps(ingredients,p.equipment);
+   instructions=renderCookingSteps({steps},data.catalog,ingredients,p.equipment);
+   usedDefaultSteps=true;
+  }
   if(!instructions)return reject('RECIPE_STEPS');
   const {method,equipment}=instructions;
   if(typeof method!=='string'||!method.trim()||method.length>1600)return reject(structured?'RECIPE_STEPS':'RECIPE_FIELDS');
   if(!Array.isArray(equipment)||!equipment.every(x=>p.equipment.includes(x)))return reject('RECIPE_FIELDS');
   if(!structured&&Object.keys(ingredients).some(heatRequired)&&!equipment.some(x=>['Плита','Духовка','Микроволновка','Мультиварка','Аэрогриль'].includes(x)))return reject('MISSING_HEAT');
-  const name=p.allergies.length?entries.slice(0,3).map(([id])=>data.catalog[id].name).join(', ').slice(0,100):r.name;
-  recipes.push({name,type:r.type,time:r.time,equipment,ingredients,method,...(structured?{steps:r.steps.map(({action,ids})=>({action,ids})),verifiedSteps:true}:{})})
+  const name=p.allergies.length||usedDefaultSteps?entries.slice(0,3).map(([id])=>data.catalog[id].name).join(', ').slice(0,100):r.name;
+  recipes.push({name,type:r.type,time:r.time,equipment,ingredients,method,...(structured?{steps:steps.map(({action,ids})=>({action,ids})),verifiedSteps:true}:{})})
  }
  const seen=new Set(),sum=Object.create(null),daily=Object.create(null),plan=[];
  for(const x of result.plan){
