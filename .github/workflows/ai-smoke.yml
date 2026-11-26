@@ -52,7 +52,7 @@ jobs:
         run: |
           mkdir -p diagnostics
           node --input-type=module <<'NODE'
-          import {writeFile} from 'node:fs/promises';
+          import {readFile,writeFile} from 'node:fs/promises';
           const api='https://ladno.anufrievdenis1996-4f6.workers.dev';
           const origin='https://anufriev163.github.io';
           const report={checkedAt:new Date().toISOString(),runId:process.env.GITHUB_RUN_ID,result:'not_tested',deployment:process.env.DEPLOY_STATUS||'unknown'};
@@ -67,12 +67,16 @@ jobs:
             try{const r=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(12000),headers:{Origin:origin}});let d=null;try{d=await r.json()}catch{}return {status:r.status,ready:d?.ready===true,api:Number.isInteger(d?.api)?d.api:null,generation:d?.capabilities?.includes('generate-recipes')===true}}
             catch(e){return {networkCode:safeCode(e.cause?.code)||safeCode(e.name)}}
           };
+          const source=await readFile('worker.mjs','utf8');
+          const expected=source.match(/version:'(cloudflare-v[0-9]+)'/)?.[1];
+          report.expectedVersion=expected||null;
           report.publicProvider=await probe('https://anymodel.org/v1/models');
           report.reserve=await probe('https://ladno-production.up.railway.app/version');
           try{
             const v=await read('/version');
             report.version={status:v.status,cors:v.cors,ready:v.data?.ready===true,api:Number.isInteger(v.data?.api)?v.data.api:null,version:typeof v.data?.version==='string'&&/^cloudflare-v[0-9]+$/.test(v.data.version)?v.data.version:null};
             if(!v.ok||!v.cors||!v.data?.ready||!v.data?.capabilities?.includes('generate-recipes')){report.result='version_not_ready'}
+            else if(!expected||v.data.version!==expected||!v.data.capabilities?.includes('bounded-direct-generation')){report.result='deployment_required'}
             else{
               const pre=await read('/api/menu',{method:'OPTIONS',headers:{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'}});
               report.preflight={status:pre.status,cors:pre.cors};
