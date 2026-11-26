@@ -191,6 +191,107 @@ html.keyboard-open{scroll-padding-bottom:var(--s4)}
 .price-origin{display:block;font-size:.75rem;line-height:1.35}.reference-row{padding:12px 0;border-bottom:1px solid var(--line)}.reference-row a{display:block;min-height:44px;font-weight:550;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}.reference-row small{display:block}
 .base-products{margin-top:24px}.base-products .extra-row{min-height:58px}.base-products .extra-copy{min-width:0}.base-products .extra-copy b{overflow-wrap:anywhere}
 .allergy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.allergy-grid .chip{width:100%;min-width:0;min-height:50px;text-align:center;justify-content:center;overflow-wrap:anywhere}.allergy-grid .chip:first-child{grid-column:1/-1}.inline-add{gap:8px;flex-wrap:nowrap}.inline-add .extraField{flex:1;min-width:0;width:0}.inline-add .secondary{flex:0 0 auto;white-space:nowrap;padding-inline:12px;min-width:0}.food-results{display:grid;gap:0;margin-top:8px}.search-option{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;background:white;border:0;border-bottom:1px solid var(--line);padding:10px 2px;text-align:left;color:var(--ink);font-size:1rem;overflow-wrap:anywhere}.search-option.selected{font-weight:650}.search-option>span:last-child{flex:0 0 auto;font-size:1.3rem;color:var(--muted)}.selected-foods{margin:12px 0}.favorite-text{width:100%;resize:vertical;min-height:140px;font:inherit;padding:14px;line-height:1.5;border:1px solid var(--control);border-radius:var(--radius)}.budget-slider{margin:24px 0 32px}.budget-slider output{display:block;font-size:2.8rem;letter-spacing:-.04em;font-weight:750;font-variant-numeric:tabular-nums;margin-bottom:26px}.budget-slider input[type=range]{width:100%;height:44px;accent-color:#171717;margin:0}.budget-ends{margin-top:4px;color:var(--muted)}
+
+/* Desktop adaptation: preserve the original mobile DOM order and touch targets. */
+.desktop-brand,.desktop-nav-label{display:none}
+.week-grid,.shopping-layout,.shopping-items,.shopping-actions,.recipe-layout,.recipe-ingredients,.recipe-method{display:contents}
+@media (min-width:960px){
+ :root{--gutter:40px;--h1:2.25rem;--body:1.0625rem;--bar-height:0px}
+ html{scroll-padding-block:24px}
+ #app{max-width:1600px;width:100%;min-height:100dvh}
+ #app:has(>.tabbar){display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start}
+ #app:has(>.tabbar)>header{grid-column:2;grid-row:1;padding:24px 40px 0;min-height:64px}
+ #app:has(>.tabbar)>header:not(:has(.back)){display:none}
+ #app:has(>.tabbar)>header .brand{visibility:hidden}
+ #app:has(>.tabbar)>main{grid-column:2;grid-row:2;width:100%;max-width:1320px;padding:44px 40px 56px;min-width:0}
+ #app:has(>.tabbar)>header:has(.back)+main{padding-top:16px}
+ #app>.tabbar{grid-column:1;grid-row:1/3;position:sticky;top:0;bottom:auto;left:auto;transform:none;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;width:232px;max-width:none;height:100dvh;padding:44px 20px 24px;border-top:0;border-right:1px solid var(--line);background:#fff;z-index:10;overflow:auto;margin:0}
+ .desktop-brand{display:block;font-size:1.8rem;line-height:1.1;letter-spacing:-.05em;font-weight:760;padding:0 14px}
+ .desktop-nav-label{display:block;font-size:.875rem;color:var(--muted);padding:0 14px 38px}
+ .tabbar .tab{flex-direction:row;justify-content:flex-start;gap:14px;min-height:52px;text-align:left;padding:12px 14px;font-size:1rem;border-radius:10px;line-height:1.25}
+ .tabbar .tab svg{width:23px;height:23px}
+ .tabbar .tab.selected{background:var(--ink);color:#fff;font-weight:600}
+ .tabbar .tab:not(.selected):not(:disabled):hover{background:var(--soft);color:var(--ink)}
+ .tab-content h1{margin-bottom:28px}
+ .plan-heading{flex-wrap:nowrap;margin-bottom:32px;gap:20px}
+ .plan-heading h1{flex-basis:auto;margin:0}
+ .refresh-pill{flex:0 0 auto;min-height:48px;font-size:1rem}
+ .week-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:32px 26px;align-items:start}
+ .week-grid .day-section{min-width:0;margin:0;border-top:2px solid var(--ink);padding:18px 0 0}
+ .day-section h2{font-size:1.375rem}
+ .day-section .day-nutrition{min-height:3em;margin:8px 0 12px;font-size:.875rem;line-height:1.45}
+ .mealinfo b{font-size:1.125rem;line-height:1.4;min-height:0}
+ .meal-actions{gap:4px 10px}
+ .meal-actions .secondary{min-height:42px;padding:9px 14px}
+ .meal-actions .link{min-height:42px}
+ .shopping-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,300px);grid-template-areas:"items summary" "items actions";grid-template-rows:max-content 1fr;gap:24px 32px;align-items:start}
+ .shopping-items{display:block;grid-area:items;min-width:0}
+ .shopping-summary{grid-area:summary;margin:0;padding:24px;border:1px solid var(--line);background:#fff}
+ .shopping-actions{display:block;grid-area:actions;min-width:0;align-self:start}
+ .shopping-actions .order-area{margin-top:18px}
+ .shopping-actions .store-grid{grid-template-columns:minmax(0,1fr)}
+ .shopping-actions .info-details{margin-top:0}
+ .shopping-summary .amount{font-size:2.3rem}
+ .shopping-items .checklist-heading{margin:0 0 24px;gap:12px}
+ .shopping-items .grocery-group{margin-bottom:28px}
+ .shopping-items .grocery{min-height:70px;gap:16px}
+ .shopping-items .grocery .price{max-width:8em}
+ .recipe-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:start;gap:40px}
+ .recipe-ingredients,.recipe-method{display:block;min-width:0}
+ .recipe-layout h2{margin:24px 0 14px}
+ .recipe-method .steps{margin-top:0}
+ #app:has(>.tabbar)>main.narrow-page{max-width:800px}
+ .narrow-page .empty-state,.notice,.action-stack{max-width:560px}
+ .narrow-page .empty-state .primary,.narrow-page>.primary{width:min(100%,360px)}
+ .narrow-page .settings-row{min-height:70px}
+ .narrow-page .extra-form{max-width:600px}
+ .narrow-page .budget-slider{max-width:600px}
+ .loading{align-self:center;padding-top:48px!important}
+ .loading h1{margin-bottom:12px}
+ .loading p{max-width:460px}
+ #app:has(>.quiz-content){max-width:880px}
+ #app:has(>.quiz-content)>header{padding:28px 48px 16px}
+ #app:has(>.quiz-content)>.progress{margin:0 48px}
+ #app>.quiz-content:not(.welcome-main){width:100%;padding:42px 48px 32px;min-height:0;flex:1}
+ .quiz-content:not(.welcome-main) h1{font-size:2.25rem}
+ .quiz-content .wide,.quiz-content .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .quiz-content .store-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .quiz-content .days{grid-template-columns:repeat(7,minmax(0,1fr))}
+ .quiz-content .allergy-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .quiz-content .allergy-grid .chip:first-child{grid-column:1/-1}
+ .quiz-content .food-results{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
+ .quiz-content .extra-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
+ .quiz-content .extra-form .inline-error{grid-column:1/-1}
+ #app:has(>.quiz-content)>.footer{position:static;transform:none;max-width:none;width:100%;padding:24px 48px 32px;border-top:1px solid var(--line)}
+ #app:has(>.quiz-content)>.footer .primary{display:flex;width:min(100%,360px);margin-left:auto}
+ #app:has(>.welcome-main){max-width:1160px;justify-content:center;min-height:100dvh}
+ #app>.welcome-main{flex:0 1 auto;min-height:0;padding:48px 64px 24px}
+ .welcome{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:42px;align-items:center;text-align:center}
+ .welcome-copy{max-width:none}
+ .welcome h1{font-size:clamp(2.35rem,4.5vw,3.4rem);margin-bottom:20px}
+ .welcome p{font-size:1.2rem;max-width:400px}
+ .welcome-visual{padding:0;min-width:0}
+ .welcome-art{width:min(100%,430px);max-height:430px}
+ #app:has(>.welcome-main)>.footer{border-top:0;padding:16px 64px 48px;max-width:100%}
+ #app:has(>.welcome-main)>.footer .primary{margin:0 auto;width:320px;max-width:100%}
+ .sheet-backdrop{align-items:center}
+ .edit-sheet{border-radius:24px}
+}
+@media(min-width:960px) and (max-width:1120px){
+ #app:has(>.tabbar){grid-template-columns:196px minmax(0,1fr)}
+ #app>.tabbar{width:196px;padding-inline:14px}
+ #app:has(>.tabbar)>main{padding-inline:30px}
+ .shopping-layout{grid-template-columns:minmax(0,1fr) minmax(210px,250px);column-gap:20px}
+ .shopping-summary{padding:18px}
+ .week-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:26px 22px}
+}
+@media(min-width:960px) and (max-height:650px){
+ #app>.welcome-main{padding-top:28px}
+ .welcome-art{max-height:280px}
+ #app:has(>.welcome-main)>.footer{padding-bottom:28px}
+}
+@media(min-width:1600px){#app:has(>.tabbar)>main{padding-inline:56px}}
+
 </style></head><body><div id="app"></div><script>
 'use strict';
 const days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'], fullDays=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
@@ -776,18 +877,18 @@ const tabIcons={
 };
 function navigation(){
  const active=s.view==='recipe'?'plan':s.view==='budget'?budgetReturn:s.view==='profile'||s.view==='quiz'?'settings':s.view;
- return '<nav class="tabbar" aria-label="Основные разделы">'+[['shopping','Покупки'],['plan','Меню'],['settings','Настройки']].map(([v,l])=>'<button type="button" class="tab '+(active===v?'selected':'')+'" '+(active===v?'aria-current="page"':'')+' data-act="view" data-val="'+v+'" '+(aiBusy&&['extras','settings'].includes(v)?'disabled aria-disabled="true"':'')+'><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+tabIcons[v]+'</svg><span>'+l+'</span></button>').join('')+'</nav>'
+ return '<nav class="tabbar" aria-label="Основные разделы"><div class="desktop-brand" aria-hidden="true">налегке</div><div class="desktop-nav-label" aria-hidden="true">питание на неделю</div>'+[['shopping','Покупки'],['plan','Меню'],['settings','Настройки']].map(([v,l])=>'<button type="button" class="tab '+(active===v?'selected':'')+'" '+(active===v?'aria-current="page"':'')+' data-act="view" data-val="'+v+'" '+(aiBusy&&['extras','settings'].includes(v)?'disabled aria-disabled="true"':'')+'><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+tabIcons[v]+'</svg><span>'+l+'</span></button>').join('')+'</nav>'
 }
 function generationScreen(){app.innerHTML=head(false)+'<main class="tab-content loading"><div class="spinner" aria-hidden="true"></div><h1>составляем меню</h1><p>бюджет '+money(s.budget)+'</p><p id="generation-status" role="status" aria-live="polite">'+(Date.now()-generationStartedAt>10000?'подбор ещё продолжается. можно отменить и вернуться к меню.':'подбираем блюда по вашим ответам. это может занять некоторое время.')+'</p><button class="link" data-act="cancel-generation">отменить</button></main>'+navigation()}
 function generationFailure(){const budget=/бюджет|уложиться/i.test(generationError);app.innerHTML=head(false)+'<main class="tab-content"><h1>'+(s.view==='plan'?'меню на неделю':'список покупок')+'</h1><div class="notice" role="alert"><h2>не удалось составить меню</h2><p>'+esc(generationError)+'</p><small>бюджет '+money(s.budget)+'</small></div><div class="action-stack">'+(budget?'<button class="primary" data-act="budget-edit">изменить бюджет</button><button class="secondary" data-act="ai-generate">попробовать снова</button>':'<button class="primary" data-act="ai-generate">попробовать снова</button>')+'<button class="secondary" data-act="view" data-val="quiz">изменить профиль</button><a class="secondary" href="api-check.html">проверить работу ИИ</a>'+(s.plan.length&&(s.weeklyBackup||!auditPlan(s.plan)&&total()<=s.budget)?'<button class="secondary" data-act="old-menu">вернуться к меню</button>':'')+'</div></main>'+navigation()}
-function reviewView(t){app.innerHTML=head(false)+'<main class="tab-content"><h1>'+t+'</h1><div class="empty-state"><p>Обновите меню, чтобы пересчитать количество продуктов.</p><button class="primary" data-act="ai-generate">Составить заново</button></div></main>'+navigation()}
+function reviewView(t){app.innerHTML=head(false)+'<main class="tab-content narrow-page"><h1>'+t+'</h1><div class="empty-state"><p>Обновите меню, чтобы пересчитать количество продуктов.</p><button class="primary" data-act="ai-generate">Составить заново</button></div></main>'+navigation()}
 function emptyView(t,d){app.innerHTML=head(false)+'<main class="tab-content"><h1>'+t+'</h1><div class="empty-state"><p>'+d+'</p>'+(s.profileComplete?'<p class="small-note">профиль сохранён. выберите дни, пожелания и бюджет.</p>':'')+'<button class="primary" data-act="weekly-start">Составить меню</button></div></main>'+navigation()}
 function plan(){
  if(s.plan.length&&(auditPlan(s.plan)||total()>s.budget)){reviewView('Меню на неделю');return}
  if(!s.plan.length){emptyView('Меню','Составьте меню на неделю.');return}
  app.innerHTML=head(false)+
- '<main class="tab-content"><div class="section-heading"><h1>Меню на неделю</h1><button class="secondary refresh-pill" data-act="weekly-start"><svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 8a7.5 7.5 0 0 1 12-2L20 12M4 12l2.5 6a7.5 7.5 0 0 0 12-2"/></svg>Составить заново</button></div>'+
- [...s.days].sort((a,b)=>a-b).map(day=>'<section class="day-section"><h2>'+fullDays[day]+'</h2>'+(!s.children?'<p class="small-note day-nutrition">'+(dayNutrition(s.plan,day)?nutritionLine(dayNutrition(s.plan,day))+' · на взрослую порцию за день':'пищевая ценность не рассчитана: есть продукты без данных')+'</p>':'')+s.plan.map((p,i)=>p.day!==day?'':'<article class="meal"><div class="mealinfo"><small>'+esc(p.meal)+' · '+recipes[p.id].time+' мин</small><b>'+esc(recipes[p.id].name)+'</b><div class="meal-actions"><button class="secondary" data-act="recipe" data-val="'+i+'">Рецепт</button><button class="link" data-act="swap" data-val="'+i+'">Заменить</button></div></div></article>').join('')+'</section>').join('')+
+ '<main class="tab-content plan-page"><div class="section-heading plan-heading"><h1>Меню на неделю</h1><button class="secondary refresh-pill" data-act="weekly-start"><svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 8a7.5 7.5 0 0 1 12-2L20 12M4 12l2.5 6a7.5 7.5 0 0 0 12-2"/></svg>Составить заново</button></div><div class="week-grid">'+
+ [...s.days].sort((a,b)=>a-b).map(day=>'<section class="day-section"><h2>'+fullDays[day]+'</h2>'+(!s.children?'<p class="small-note day-nutrition">'+(dayNutrition(s.plan,day)?nutritionLine(dayNutrition(s.plan,day))+' · на взрослую порцию за день':'пищевая ценность не рассчитана: есть продукты без данных')+'</p>':'')+s.plan.map((p,i)=>p.day!==day?'':'<article class="meal"><div class="mealinfo"><small>'+esc(p.meal)+' · '+recipes[p.id].time+' мин</small><b>'+esc(recipes[p.id].name)+'</b><div class="meal-actions"><button class="secondary" data-act="recipe" data-val="'+i+'">Рецепт</button><button class="link" data-act="swap" data-val="'+i+'">Заменить</button></div></div></article>').join('')+'</section>').join('')+'</div>'+
  wishNotice()+'<details class="info-details"><summary>О меню</summary><p>'+(s.source==='local'?'Резервное меню подобрано из готовых рецептов, без ИИ. ':'')+'Расчёт энергии и БЖУ ориентировочный, не определяет индивидуальные потребности, витамины и минералы. План не проверен на индивидуальные нормы питания. Для детей и специальных диет учитывайте возраст и рекомендации специалиста.</p></details></main>'+navigation()
 }
 function priceSources(b){const rows=b.filter(x=>priceMeta[x.k]);return rows.length?'<details class="info-details"><summary>товары из каталога</summary>'+rows.map(x=>{const m=priceMeta[x.k];return '<div class="reference-row"><a href="'+esc(m.url)+'">'+esc(m.match)+'</a><small>'+money(m.price)+' / '+qty(m.pack,m.unit)+' · '+esc(m.checked||m.observed)+'</small></div>'}).join('')+'</details>':''}
@@ -797,20 +898,20 @@ function shopping(){
  const b=basket(),cats=[...new Set(b.map(x=>x.cat))],done=b.filter(x=>s.checked.includes(x.k)).length;
  const referenced=b.filter(x=>priceStatus(x.k)==='reference').length,stale=b.filter(x=>priceStatus(x.k)==='stale').length;const freshValue=b.reduce((n,x)=>n+(priceStatus(x.k)==='reference'?(x.price||0):0),0),coverage=total()>0?Math.min(100,Math.round(freshValue/total()*100)):0;
  const budgetText=missingPrices()?'У '+missingPrices()+' товаров нет цены. Бюджет проверен только по известной части списка':total()>s.budget?'Выше бюджета на '+money(total()-s.budget):'Примерный остаток '+money(s.budget-total());
- app.innerHTML=head(false)+'<main class="tab-content"><h1>Список покупок</h1><div class="summary"><small>Ориентировочные цены</small><div class="amount">'+priceTotal()+'</div><p class="budget-note">'+budgetText+'</p><p class="small-note price-disclaimer">цены и наличие могут отличаться'+(coverage<85?' · значительная часть суммы приблизительна':'')+'</p><details class="info-details"><summary>источники цен</summary><p>'+coverage+'% расчётной суммы · '+referenced+' из '+b.length+' позиций имеют ценовой ориентир из каталога пятёрочки за последние 7 дней. '+(stale?stale+' позиций — более старые ориентиры. ':'')+'остальные — расчётные оценки. регион, наличие и цена на кассе не проверены.</p></details></div>'+
+ app.innerHTML=head(false)+'<main class="tab-content shopping-page"><h1>Список покупок</h1><div class="shopping-layout"><div class="summary shopping-summary"><small>Ориентировочные цены</small><div class="amount">'+priceTotal()+'</div><p class="budget-note">'+budgetText+'</p><p class="small-note price-disclaimer">цены и наличие могут отличаться'+(coverage<85?' · значительная часть суммы приблизительна':'')+'</p><details class="info-details"><summary>источники цен</summary><p>'+coverage+'% расчётной суммы · '+referenced+' из '+b.length+' позиций имеют ценовой ориентир из каталога пятёрочки за последние 7 дней. '+(stale?stale+' позиций — более старые ориентиры. ':'')+'остальные — расчётные оценки. регион, наличие и цена на кассе не проверены.</p></details></div><section class="shopping-items" aria-label="Продукты">'+
  ((s.allergies.length||s.customAllergies.length)?'<p class="small-note" role="note">при аллергии проверяйте состав и следы аллергенов на каждой упаковке, включая личные продукты.</p>':'')+'<div class="section-heading checklist-heading"><h2>Продукты</h2><span class="check-count">'+done+' из '+b.length+' куплено</span></div>'+
  cats.map(cat=>'<section class="grocery-group"><h3>'+esc(cat)+'</h3>'+b.filter(x=>x.cat===cat).map(x=>'<div class="grocery '+(s.checked.includes(x.k)?'done':'')+'"><label class="grocery-check"><input type="checkbox" data-check="'+esc(x.k)+'" '+(s.checked.includes(x.k)?'checked':'')+'><span><b class="itemname">'+esc(x.name)+'</b><small class="quantity">'+qty(x.buy,x.unit)+(x.product?' · '+x.packs+' уп.':'')+'</small></span></label><span class="price">'+(x.price===null?'Цена неизвестна':money(x.price))+(priceStatus(x.k)==='estimate'?'<small class="price-origin">оценка</small>':priceStatus(x.k)==='stale'?'<small class="price-origin">старая цена</small>':'')+'</span>'+(x.product?.url?'<a class="product-link" href="'+esc(x.product.url)+'">Открыть товар →</a>':'')+'</div>').join('')+'</section>').join('')+
- wishNotice()+priceSources(b)+orderPanel()+'<button class="secondary copy-button" data-act="copy">Скопировать список</button></main>'+navigation()
+ '</section><div class="shopping-actions">'+wishNotice()+priceSources(b)+orderPanel()+'<button class="secondary copy-button" data-act="copy">Скопировать список</button></div></div></main>'+navigation()
 }
 const qty=(n,u)=>n>=1000&&u!=='шт'?`${(n/1000).toLocaleString('ru-RU',{maximumFractionDigits:2})} ${u==='мл'?'л':'кг'}`:`${n} ${u}`;
-let detail=0;function recipe(){const p=s.plan[detail],r=recipes[p.id];app.innerHTML=head()+`<main class="tab-content recipe-content"><div class="eyebrow">${p.meal} · ${r.time} минут</div><h1>${esc(r.name)}</h1><p>На семью (${s.adults+s.children} чел.)${s.childDetails.some(x=>x.portion===0)?'. Без питания детей до 2 лет.':''}</p>${nutritionDetails(calcNutrition(r))}<h2>Ингредиенты</h2><div class="ingredients">${Object.entries(r.ingredients).map(([k,v])=>`<div class="row"><span>${esc(food[k][0])}${s.pantry.includes(k)?' · дома':''}</span><b>${qty(Math.round(v*portions()*10)/10,food[k][4]||'г')}</b></div>`).join('')}</div><h2>Приготовление</h2><ol class="steps">${r.method.split('. ').map(t=>`<li>${esc(t.replace(/\.$/,''))}.</li>`).join('')}</ol></main>`+navigation()}
+let detail=0;function recipe(){const p=s.plan[detail],r=recipes[p.id];app.innerHTML=head()+`<main class="tab-content recipe-content"><div class="eyebrow">${p.meal} · ${r.time} минут</div><h1>${esc(r.name)}</h1><p>На семью (${s.adults+s.children} чел.)${s.childDetails.some(x=>x.portion===0)?'. Без питания детей до 2 лет.':''}</p>${nutritionDetails(calcNutrition(r))}<div class="recipe-layout"><section class="recipe-ingredients"><h2>Ингредиенты</h2><div class="ingredients">${Object.entries(r.ingredients).map(([k,v])=>`<div class="row"><span>${esc(food[k][0])}${s.pantry.includes(k)?' · дома':''}</span><b>${qty(Math.round(v*portions()*10)/10,food[k][4]||'г')}</b></div>`).join('')}</div></section><section class="recipe-method"><h2>Приготовление</h2><ol class="steps">${r.method.split('. ').map(t=>`<li>${esc(t.replace(/\.$/,''))}.</li>`).join('')}</ol></section></div></main>`+navigation()}
 function budgetControl(){return '<div class="budget-slider"><output id="budget-value" for="budgetnum">'+money(s.budget)+'</output><input type="range" id="budgetnum" min="0" max="20000" step="500" value="'+s.budget+'" aria-label="Бюджет в рублях" aria-valuetext="'+money(s.budget)+'"><div class="row budget-ends"><small>0 ₽</small><small>20 000 ₽</small></div></div><p class="inline-error" id="budget-error" role="alert" hidden></p>'}
 function inlineError(id,msg){const el=document.querySelector('#'+id);if(el){el.hidden=false;el.textContent=msg}else alert(msg)}
 function readBudget(){const el=document.querySelector('#budgetnum'),n=Number(el?.value);if(!el||!Number.isInteger(n)||n<0||n>20000||n%500!==0){inlineError('budget-error','выберите бюджет от 0 до 20 000 ₽');return false}s.budget=n;save();return true}
 let budgetReturn=['settings','shopping','plan'].includes(s.budgetReturn)?s.budgetReturn:'settings';
-function budgetScreen(){app.innerHTML=head(true)+'<main class="tab-content"><h1>бюджет на продукты</h1>'+budgetControl()+'<button class="primary full" data-act="budget-save">сохранить</button></main>'+navigation()}
-function settingsScreen(){app.innerHTML=head(false)+'<main class="tab-content"><h1>настройки</h1><button class="settings-row" data-act="view" data-val="quiz">изменить анкету <span aria-hidden="true">›</span></button><button class="settings-row" data-act="budget-edit">бюджет <span class="settings-value">'+money(s.budget)+' ›</span></button><button class="settings-row optional-setting" data-act="view" data-val="profile">профиль питания <span aria-hidden="true">›</span></button><a class="settings-row" href="api-check.html">проверка ИИ <span aria-hidden="true">›</span></a></main>'+navigation()}
-function profileScreen(){app.innerHTML=head(true)+'<main class="tab-content"><h1>профиль питания</h1>'+bioFields()+'<button class="primary full" data-act="profile-save">сохранить</button></main>'+navigation()}
+function budgetScreen(){app.innerHTML=head(true)+'<main class="tab-content narrow-page"><h1>бюджет на продукты</h1>'+budgetControl()+'<button class="primary full" data-act="budget-save">сохранить</button></main>'+navigation()}
+function settingsScreen(){app.innerHTML=head(false)+'<main class="tab-content narrow-page"><h1>настройки</h1><button class="settings-row" data-act="view" data-val="quiz">изменить анкету <span aria-hidden="true">›</span></button><button class="settings-row" data-act="budget-edit">бюджет <span class="settings-value">'+money(s.budget)+' ›</span></button><button class="settings-row optional-setting" data-act="view" data-val="profile">профиль питания <span aria-hidden="true">›</span></button><a class="settings-row" href="api-check.html">проверка ИИ <span aria-hidden="true">›</span></a></main>'+navigation()}
+function profileScreen(){app.innerHTML=head(true)+'<main class="tab-content narrow-page"><h1>профиль питания</h1>'+bioFields()+'<button class="primary full" data-act="profile-save">сохранить</button></main>'+navigation()}
 function saveProfile(){if(!saveBioFields())return;s.view='settings';save();render()}
 let restoringHistory=false,historyReady=false,sheetHistoryId='',sheetHistorySerial=0;
 const closedSheets=new Set();
