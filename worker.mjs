@@ -5,7 +5,7 @@ const generatePrompt="Ты составляешь новые домашние р
 // Keep validation independent of the model's JSON mode and reasoning settings.
 function providerBody(data,profile,catalog,candidates){
  const slots=profile.days.length*profile.meals.length;
- const prompt=data.mode==='generate'?generatePrompt+' Отвечай сразу готовым JSON, без рассуждений. Включи только используемые рецепты; способ приготовления 2–4 коротких, безопасных шага.':compactPrompt;
+ const prompt=data.mode==='generate'?generatePrompt+' Отвечай сразу готовым JSON, без рассуждений. Включи только используемые рецепты; способ приготовления 2–4 коротких, безопасных шага. Не превышай пределы одновременно на блюдо, день и весь запрос. packageRemainders — уже купленные граммы, мл или штуки на семью: сначала используй этот остаток, округляй до упаковки только сверх него. Бюджет — предел новых покупок. В способе приготовления используй только перечисленные ингредиенты и воду.'+(profile.days.length===1?' На один день верни ровно один рецепт каждого типа из profile.meals. Поле plan можно опустить: сервер сам назначит эти рецепты на выбранный день.':''):compactPrompt;
  return {model:'ds/deepseek-v4-flash',thinking:{type:'disabled'},reasoning_effort:'none',response_format:{type:'json_object'},messages:[{role:'system',content:prompt},{role:'user',content:JSON.stringify({profile,catalog,...(data.mode==='select'?{candidates}:{}),correction:String(data.correction||'').slice(0,500)})}],max_tokens:data.mode==='generate'?Math.min(10000,Math.max(1600,1000+500*slots)):2000,stream:false};
 }
 const customId=k=>typeof k==='string'&&/^user_[a-z0-9]{8,24}$/.test(k);
@@ -27,6 +27,7 @@ function validInput(d){const p=d?.profile,c=d?.catalog;if(!p||!c||Array.isArray(
  if(!validNum(p.weeklyExtrasKnownCost,0,40000000)||!validNum(p.weeklyExtrasUnknownPrices,0,40))return false;
  for(const k of ['quantityLimits','dailyQuantityLimits','servingQuantityLimits'])if(!p[k]||typeof p[k]!=='object'||Object.keys(p[k]).length>120||!Object.entries(p[k]).every(([id,n])=>knownId(id)&&validNum(n,1,10000)&&(!customId(id)||n<=customLimit(id,k,p.days.length))))return false;
  if(Object.keys(c).some(k=>customId(k)&&(!Object.hasOwn(p.servingQuantityLimits,k)||!Object.hasOwn(p.dailyQuantityLimits,k)||!Object.hasOwn(p.quantityLimits,k)||p.dislikes.includes(k))))return false;
+ if(p.packageRemainders!==undefined&&(d.mode!=='generate'||!p.packageRemainders||typeof p.packageRemainders!=='object'||Array.isArray(p.packageRemainders)||!Object.entries(p.packageRemainders).every(([k,n])=>Object.hasOwn(c,k)&&c[k].price!==null&&validNum(n,0,c[k].package))))return false;
  if(p.personal!=null){const v=p.personal;if(!v||typeof v!=='object'||!validNum(v.age,18,120)||!(v.height===null||validNum(v.height,100,250))||!(v.weight===null||validNum(v.weight,30,350))||!str(v.activity)||v.adultOnly!==true)return false}
  if(p.wishes!==undefined&&(!arr(p.wishes,40)||p.wishes.some(x=>!x.trim()||x.length>100)))return false;
  if(d.mode!==undefined&&!['select','generate'].includes(d.mode))return false;
@@ -40,27 +41,33 @@ function validInput(d){const p=d?.profile,c=d?.catalog;if(!p||!c||Array.isArray(
 }
 
 
-function validateGenerated(result,data){
+function assignSingleDaySlots(result,profile){
+ if(profile.days.length!==1||!Array.isArray(result?.recipes)||result.recipes.length!==profile.meals.length)return result;
+ const positions=new Map(result.recipes.map((recipe,index)=>[recipe?.type,index]));
+ if(!profile.meals.every(meal=>positions.has(meal)))return result;
+ return {...result,plan:profile.meals.map(meal=>({day:profile.days[0],meal,id:positions.get(meal)}))};
+}
+function validateGenerated(result,data,reject=()=>null){
  const p=data.profile, rs=result?.recipes;
- if(!Array.isArray(rs)||!rs.length||rs.length>28||!Array.isArray(result.plan)||result.plan.length!==p.days.length*p.meals.length)return null;
+ if(!Array.isArray(rs)||!rs.length||rs.length>28||!Array.isArray(result.plan)||result.plan.length!==p.days.length*p.meals.length)return reject('PLAN_SHAPE');
  const recipes=[];
  for(const r of rs){
-  if(!r||typeof r.name!=='string'||!r.name.trim()||r.name.length>100||typeof r.method!=='string'||!r.method.trim()||r.method.length>1600||!p.meals.includes(r.type)||!Number.isInteger(r.time)||!validNum(r.time,1,180)||!Array.isArray(r.equipment)||!r.equipment.every(x=>p.equipment.includes(x))||!r.ingredients||typeof r.ingredients!=='object'||Array.isArray(r.ingredients))return null;
+  if(!r||typeof r.name!=='string'||!r.name.trim()||r.name.length>100||typeof r.method!=='string'||!r.method.trim()||r.method.length>1600||!p.meals.includes(r.type)||!Number.isInteger(r.time)||!validNum(r.time,1,180)||!Array.isArray(r.equipment)||!r.equipment.every(x=>p.equipment.includes(x))||!r.ingredients||typeof r.ingredients!=='object'||Array.isArray(r.ingredients))return reject('RECIPE_FIELDS');
   const entries=Object.entries(r.ingredients);
-  if(!entries.length||entries.length>12||!entries.every(([k,v])=>Object.hasOwn(data.catalog,k)&&Number.isInteger(v)&&validNum(v,1,p.servingQuantityLimits[k]||0)))return null;
-  if(Object.keys(r.ingredients).some(heatRequired)&&!r.equipment.some(x=>['Плита','Духовка','Микроволновка','Мультиварка','Аэрогриль'].includes(x)))return null;
+  if(!entries.length||entries.length>12||!entries.every(([k,v])=>Object.hasOwn(data.catalog,k)&&!p.dislikes.includes(k)&&Number.isInteger(v)&&validNum(v,1,p.servingQuantityLimits[k]||0)))return reject('INGREDIENT_QUANTITY');
+  if(Object.keys(r.ingredients).some(heatRequired)&&!r.equipment.some(x=>['Плита','Духовка','Микроволновка','Мультиварка','Аэрогриль'].includes(x)))return reject('MISSING_HEAT');
   recipes.push({name:r.name,type:r.type,time:r.time,equipment:r.equipment,ingredients:Object.fromEntries(entries),method:r.method})
  }
  const seen=new Set(),sum=Object.create(null),daily=Object.create(null),plan=[];
  for(const x of result.plan){
-  if(!x||!Number.isInteger(x.id)||!recipes[x.id]||!p.days.includes(x.day)||!p.meals.includes(x.meal)||recipes[x.id].type!==x.meal)return null;
-  const k=x.day+'|'+x.meal;if(seen.has(k))return null;seen.add(k);
+  if(!x||!Number.isInteger(x.id)||!recipes[x.id]||!p.days.includes(x.day)||!p.meals.includes(x.meal)||recipes[x.id].type!==x.meal)return reject('SLOT_MAPPING');
+  const k=x.day+'|'+x.meal;if(seen.has(k))return reject('DUPLICATE_SLOT');seen.add(k);
   const d=daily[x.day]??=Object.create(null);
-  for(const [id,n] of Object.entries(recipes[x.id].ingredients)){sum[id]=(sum[id]||0)+n;d[id]=(d[id]||0)+n;if(sum[id]>(p.quantityLimits[id]||0)||d[id]>(p.dailyQuantityLimits[id]||0))return null}
+  for(const [id,n] of Object.entries(recipes[x.id].ingredients)){sum[id]=(sum[id]||0)+n;d[id]=(d[id]||0)+n;if(d[id]>(p.dailyQuantityLimits[id]||0))return reject('DAILY_QUANTITY');if(sum[id]>(p.quantityLimits[id]||0))return reject('PERIOD_QUANTITY')}
   plan.push({day:x.day,meal:x.meal,id:x.id});
  }
- let cost=0;for(const [id,n] of Object.entries(sum)){if(p.pantry.includes(id))continue;const f=data.catalog[id];if(f.price===null){if(p.budget===0)return null;continue;}cost+=Math.ceil(n*p.servings/f.package)*f.package*f.price/(f.unit==='шт'?1:1000)}
- if(cost>p.budget+.01)return null;
+ let cost=0;for(const [id,n] of Object.entries(sum)){if(p.pantry.includes(id))continue;const f=data.catalog[id];if(f.price===null){if(p.budget===0)return reject('UNKNOWN_PRICE');continue;}const needed=Math.max(0,n*p.servings-(p.packageRemainders?.[id]||0));cost+=Math.ceil(needed/f.package)*f.package*f.price/(f.unit==='шт'?1:1000)}
+ if(cost>p.budget+.01)return reject('BUDGET');
  return {recipes,plan,note:typeof result.note==='string'?result.note.slice(0,700):''}
 }
 
@@ -102,7 +109,7 @@ export default {
    return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600','Vary':'Origin'}})
   }
   const ready=!!env.ANYMODEL_API_KEY&&!!env.MENU_QUOTA;
-  if(req.method==='GET'&&['/health','/version'].includes(path))return send({ready,version:'cloudflare-v7',api:3,capabilities:['generate-recipes','select-recipes','custom-products','product-search','diagnostics','zero-budget','expanded-catalog','bounded-direct-generation'],foodIds:[...ids]});
+  if(req.method==='GET'&&['/health','/version'].includes(path))return send({ready,version:'cloudflare-v7',api:3,capabilities:['generate-recipes','select-recipes','custom-products','product-search','diagnostics','zero-budget','expanded-catalog','bounded-direct-generation','weekly-package-budget'],foodIds:[...ids]});
   if(path==='/api/products'&&req.method==='GET'){
    if(origin!==ORIGIN)return send({error:'Origin required'},403);
    const q=(new URL(req.url).searchParams.get('q')||'').trim();
@@ -135,19 +142,27 @@ export default {
    if(req.signal.aborted)throw Error('cancelled');
    const p=data.profile;
    // Explicit allowlist: do not forward unknown keys or unsolicited personal data.
-   const profile=Object.fromEntries(['adults','children','servings','budget','days','meals','store','stores','goal','diet','style','equipment','likes','wishes','customDislikes','allergies','dislikes','dislikeNames','pantry','quantityLimits','dailyQuantityLimits','servingQuantityLimits'].map(k=>[k,p[k]]));
+   const profile=Object.fromEntries(['adults','children','servings','budget','days','meals','store','stores','goal','diet','style','equipment','likes','wishes','customDislikes','allergies','dislikes','dislikeNames','pantry','packageRemainders','quantityLimits','dailyQuantityLimits','servingQuantityLimits'].map(k=>[k,p[k]]));
    if(!p.children&&p.personal)profile.personal={age:p.personal.age,height:p.personal.height,weight:p.personal.weight,activity:p.personal.activity,adultOnly:true};
    if(p.children)profile.goal='Обычное питание';
    const catalog=Object.fromEntries(Object.entries(data.catalog).map(([k,v])=>[k,{name:v.name,price:v.price,package:v.package,unit:v.unit}]));
    const candidates=(data.candidates||[]).map(x=>({id:x.id,name:x.name,type:x.type,time:x.time,ingredients:x.ingredients}));
-   let upstream;try{upstream=await fetch('https://anymodel.org/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+env.ANYMODEL_API_KEY},body:JSON.stringify(providerBody(data,profile,catalog,candidates)),signal:controller.signal,redirect:'manual'});}catch(e){const name=String(e?.name||'');return send({error:'Provider connection failed',code:controller.signal.aborted?'TIMEOUT':'PROVIDER_NETWORK',stage:'fetch',kind:name==='TypeError'?'TypeError':name==='AbortError'?'AbortError':'Other'},502)}
+   const completion=providerBody(data,profile,catalog,candidates);
+   let upstream;try{upstream=await fetch('https://anymodel.org/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+env.ANYMODEL_API_KEY},body:JSON.stringify(completion),signal:controller.signal,redirect:'manual'});}catch(e){const name=String(e?.name||'');return send({error:'Provider connection failed',code:controller.signal.aborted?'TIMEOUT':'PROVIDER_NETWORK',stage:'fetch',kind:name==='TypeError'?'TypeError':name==='AbortError'?'AbortError':'Other'},502)}
    if(upstream.status>=300&&upstream.status<400)return send({error:'Unexpected provider redirect',code:'PROVIDER_REDIRECT',upstreamStatus:upstream.status},502);
    if(!upstream.ok)return send({error:'Generation temporarily unavailable',code:upstream.status===401||upstream.status===403?'PROVIDER_AUTH':upstream.status===402?'PROVIDER_BALANCE':upstream.status===429?'PROVIDER_LIMIT':upstream.status===404?'MODEL_UNAVAILABLE':'PROVIDER_HTTP',upstreamStatus:upstream.status},502);
    let out;try{out=await upstream.json()}catch{return send({error:'Provider response is not JSON',code:controller.signal.aborted?'TIMEOUT':'PROVIDER_RESPONSE',upstreamStatus:upstream.status,stage:'decode'},502)}const content=out?.choices?.[0]?.message?.content;
    if(out?.choices?.[0]?.finish_reason==='length')return send({error:'Output limit reached',code:'MODEL_TRUNCATED'},422);
    if(typeof content!=='string'||content.length>100000)return send({error:'Empty result',code:'MODEL_EMPTY'},422);
    let result;try{result=JSON.parse(content.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}catch{return send({error:'Invalid model response',code:'MODEL_JSON'},422)}
-   if(data.mode==='generate'){const checked=validateGenerated(result,data);if(!checked)return send({error:'Invalid model response',code:'MODEL_PLAN'},422);return send({content:JSON.stringify(checked)})}
+   if(data.mode==='generate'){
+    let reason;
+    const checked=validateGenerated(assignSingleDaySlots(result,p),data,issue=>{reason=issue;return null});
+    if(!checked)return send({error:'Invalid model response',code:'MODEL_PLAN',reason},422);
+    const reasoningTokens=out.usage?.completion_tokens_details?.reasoning_tokens;
+    const reasoning=reasoningTokens>0||out.choices[0].message.reasoning_content||out.choices[0].message.reasoning?'returned':completion.thinking.type;
+    return send({content:JSON.stringify(checked),generation:{model:completion.model,reasoning,reasoningTokens:Number.isSafeInteger(reasoningTokens)?reasoningTokens:null}});
+   }
    const options=new Map(candidates.map(x=>[x.id,x.type])),seen=new Set();
    if(!Array.isArray(result?.plan)||result.plan.length!==p.days.length*p.meals.length||!result.plan.every(x=>{if(!x||!p.days.includes(x.day)||!p.meals.includes(x.meal)||options.get(x.id)!==x.meal)return false;const k=x.day+'|'+x.meal;if(seen.has(k))return false;seen.add(k);return true}))return send({error:'Invalid model response'},502);
    return send({content:JSON.stringify({plan:result.plan.map(({day,meal,id})=>({day,meal,id})),note:typeof result.note==='string'?result.note.slice(0,700):''})});

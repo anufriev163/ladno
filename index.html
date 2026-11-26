@@ -943,7 +943,7 @@ async function serverCapability(signal){
    const r=await timedFetch(base+'/version',{cache:'no-store',credentials:'omit',redirect:'error'},10000,signal);
    if(!r.ok)continue;const v=await r.json();
    if(v?.ready!==true)continue;
-   if(v.api>=3&&v.capabilities?.includes('generate-recipes')&&Array.isArray(v.foodIds)&&v.foodIds.length)return {mode:'generate',foodIds:new Set(v.foodIds),base,customProducts:v.capabilities.includes('custom-products'),zeroBudget:v.capabilities.includes('zero-budget')};
+   if(v.api>=3&&v.capabilities?.includes('generate-recipes')&&Array.isArray(v.foodIds)&&v.foodIds.length)return {mode:'generate',foodIds:new Set(v.foodIds),base,customProducts:v.capabilities.includes('custom-products'),zeroBudget:v.capabilities.includes('zero-budget'),weeklyPackageBudget:v.capabilities.includes('weekly-package-budget')};
    if(base!==CLOUD_API&&(v.api===2||v.api===3))return {mode:'legacy',foodIds:originalFoodIds,base};
   }catch{}
  }
@@ -968,7 +968,7 @@ async function requestAI(correction='',timeout=100000,signal,capability,prepared
  const payload=prepared||buildAIRequest(correction,timeout,capability);if(!Object.keys(payload.catalog).length)throw Error('Нет продуктов, подходящих под ваши ограничения. Проверьте профиль.');let resp;
  try{resp=await timedFetch(capability.base+'/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'},Math.max(1000,timeout),signal)}
  catch(e){throw Error('Нет ответа от сервера ИИ. Проверьте интернет и попробуйте снова.')}
- if(!resp.ok){const err=await resp.json();const messages={NOT_CONFIGURED:'Сервер ИИ не настроен (ключ или хранилище лимитов).',QUOTA_UNAVAILABLE:'Сервер не смог проверить лимит запросов (Cloudflare).',PROVIDER_AUTH:'AnyModel отклонил ключ API.',PROVIDER_BALANCE:'Недостаточно средств на балансе AnyModel.',PROVIDER_LIMIT:'AnyModel ограничил число запросов. Попробуйте позже.',MODEL_UNAVAILABLE:'Модель ИИ временно недоступна.',PROVIDER_HTTP:'AnyModel вернул ошибку '+(err?.upstreamStatus||''),TIMEOUT:'ИИ не успел ответить. Попробуйте ещё раз.',PROVIDER_NETWORK:'Cloudflare не смог связаться с AnyModel.',MODEL_EMPTY:'Некорректный пустой ответ ИИ.',MODEL_JSON:'Некорректный формат ответа ИИ.',MODEL_PLAN:'Некорректный план ИИ: не прошла проверка бюджета или граммовок.',DAILY_LIMIT:'Достигнут лимит запросов к ИИ. Попробуйте позже.'};const error=new Error(messages[err?.code]||(resp.status===400?'Сервер не принял параметры меню (400).':resp.status===422?'Некорректный ответ ИИ: не прошла проверка меню.':resp.status===429?'Лимит запросов к ИИ достигнут.':'Ошибка сервера ИИ ('+resp.status+').'));error.code=err?.code||('HTTP_'+resp.status);error.status=resp.status;throw error}
+ if(!resp.ok){const err=await resp.json();const messages={NOT_CONFIGURED:'Сервер ИИ не настроен (ключ или хранилище лимитов).',QUOTA_UNAVAILABLE:'Сервер не смог проверить лимит запросов (Cloudflare).',PROVIDER_AUTH:'AnyModel отклонил ключ API.',PROVIDER_BALANCE:'Недостаточно средств на балансе AnyModel.',PROVIDER_LIMIT:'AnyModel ограничил число запросов. Попробуйте позже.',MODEL_UNAVAILABLE:'Модель ИИ временно недоступна.',PROVIDER_HTTP:'AnyModel вернул ошибку '+(err?.upstreamStatus||''),TIMEOUT:'ИИ не успел ответить. Попробуйте ещё раз.',PROVIDER_NETWORK:'Cloudflare не смог связаться с AnyModel.',MODEL_EMPTY:'Некорректный пустой ответ ИИ.',MODEL_JSON:'Некорректный формат ответа ИИ.',MODEL_PLAN:'Некорректный план ИИ: не прошла проверка меню.',DAILY_LIMIT:'Достигнут лимит запросов к ИИ. Попробуйте позже.'};const error=new Error(messages[err?.code]||(resp.status===400?'Сервер не принял параметры меню (400).':resp.status===422?'Некорректный ответ ИИ: не прошла проверка меню.':resp.status===429?'Лимит запросов к ИИ достигнут.':'Ошибка сервера ИИ ('+resp.status+').'));error.code=err?.code||('HTTP_'+resp.status);error.status=resp.status;error.reason=err?.reason;throw error}
  const data=await resp.json();const answer=data?.content;
  if(typeof answer!=='string')throw Error('Не удалось составить меню.');
  let raw;try{raw=JSON.parse(answer.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}catch{throw Error('ИИ вернул ответ не в формате JSON.')}
@@ -986,10 +986,10 @@ function compactDailyCatalog(base,days,used){
  const rotated=[...optional.slice(start),...optional.slice(0,start)];
  return new Set([...essential,...rotated.slice(0,Math.max(0,42-essential.length))]);
 }
-function weeklyPartPayload(base,days,accepted,timeout){
+function weeklyPartPayload(base,days,accepted,timeout,weeklyPackageBudget){
  const used=Object.create(null);
  for(const item of accepted.plan)for(const [id,n] of Object.entries(accepted.recipes[item.id].ingredients))used[id]=(used[id]||0)+n;
- const catalog={},quantityLimits={},dailyQuantityLimits={},servingQuantityLimits={};
+ const catalog={},quantityLimits={},dailyQuantityLimits={},servingQuantityLimits={},packageRemainders={};
  const p=base.profile,selected=compactDailyCatalog(base,days,used);
  for(const [id,row] of Object.entries(base.catalog)){
   if(!selected.has(id))continue;
@@ -1000,11 +1000,16 @@ function weeklyPartPayload(base,days,accepted,timeout){
   catalog[id]=row;quantityLimits[id]=n;
   dailyQuantityLimits[id]=Math.min(n,p.dailyQuantityLimits[id]);
   servingQuantityLimits[id]=Math.min(n,p.servingQuantityLimits[id]);
+  if(weeklyPackageBudget&&used[id]&&row.price!==null&&!p.pantry.includes(id)){
+   const consumed=used[id]*p.servings,remainingPackage=Math.ceil(consumed/row.package)*row.package-consumed;
+   if(remainingPackage>0)packageRemainders[id]=remainingPackage;
+  }
  }
  const previousCost=accepted.plan.length?decodeAI(accepted,base.catalog,[...new Set(accepted.plan.map(x=>x.day))],false).cost:0;
- const target=Math.max(0,Math.floor((p.budget-previousCost)*days.length/Math.max(days.length,p.days.length-new Set(accepted.plan.map(x=>x.day)).size)));
- const correction='Только день '+days.join(', ')+'. Остаток общего бюджета '+Math.max(0,Math.floor(p.budget-previousCost))+' ₽; ориентир новых покупок '+target+' ₽. Повторно используй продукты, но не блюда. Верни компактный JSON, способ приготовления 2–4 коротких шага с полной термообработкой необходимых продуктов.';
- return {...base,catalog,correction,requestId:requestId(),timeoutMs:Math.max(1000,Math.min(100000,timeout-2500)),profile:{...p,days,quantityLimits,dailyQuantityLimits,servingQuantityLimits,pantry:p.pantry.filter(id=>Object.hasOwn(catalog,id)),dislikes:p.dislikes.filter(id=>Object.hasOwn(catalog,id))}};
+ const budgetLeft=Math.max(0,Math.round((p.budget-previousCost)*100)/100);
+ const target=Math.floor(budgetLeft*days.length/Math.max(days.length,p.days.length-new Set(accepted.plan.map(x=>x.day)).size));
+ const correction='Только день '+days.join(', ')+'. Ориентир новых покупок '+target+' ₽, доступно всего '+budgetLeft+' ₽. Сначала используй уже купленные продукты. Повторно используй продукты, но не блюда. Верни компактный JSON, способ приготовления 2–4 коротких шага.';
+ return {...base,catalog,correction,requestId:requestId(),timeoutMs:Math.max(1000,Math.min(100000,timeout-2500)),profile:{...p,days,quantityLimits,dailyQuantityLimits,servingQuantityLimits,pantry:p.pantry.filter(id=>Object.hasOwn(catalog,id)),dislikes:p.dislikes.filter(id=>Object.hasOwn(catalog,id)),...(weeklyPackageBudget?{budget:budgetLeft,packageRemainders}:{})}};
 }
 function combineWeeklyPart(accepted,raw,payload,base){
  decodeAI(raw,payload.catalog,payload.profile.days,false);
@@ -1021,8 +1026,8 @@ async function generateWeeklyParts(capability,signal,transport=requestAI,onProgr
  const groups=days.map(day=>[day]);
  // A checkpoint lives only in memory; no partial menu is published or persisted.
  // Reuse only with exactly the same request profile, catalog, limits and backend.
- const fingerprint=JSON.stringify([capability.base||'',base.profile,base.catalog]);
- let accepted={recipes:[],plan:[],note:''},next=0;
+ const fingerprint=JSON.stringify([capability.base||'',!!capability.weeklyPackageBudget,base.profile,base.catalog]);
+ let accepted={recipes:[],plan:[],note:''},next=0,retryAvailable=true;
  if(resume.fingerprint===fingerprint&&Date.now()-resume.checkedAt<30*60*1000&&resume.accepted&&Number.isInteger(resume.next)&&resume.next>0&&resume.next<groups.length){
   try{
    const previousDays=days.slice(0,resume.next);
@@ -1034,11 +1039,21 @@ async function generateWeeklyParts(capability,signal,transport=requestAI,onProgr
  for(let i=next;i<groups.length;i++){
   if(signal?.aborted)throw Error('Генерация отменена.');
   onProgress(i,groups.length,accepted.plan.length/base.profile.meals.length,days.length);
-  const timeout=95000,payload=weeklyPartPayload(base,groups[i],accepted,timeout);
+  const timeout=95000,payload=weeklyPartPayload(base,groups[i],accepted,timeout,capability.weeklyPackageBudget);
   if(!Object.keys(payload.catalog).length)throw Error('Не осталось подходящих продуктов в пределах недельных ограничений.');
-  const raw=await transport(payload.correction,timeout,signal,capability,payload,true);
-  if(signal?.aborted)throw Error('Генерация отменена.');
-  accepted=combineWeeklyPart(accepted,raw,payload,base);
+  const generatePart=async part=>{
+   const raw=await transport(part.correction,timeout,signal,capability,part,true);
+   if(signal?.aborted)throw Error('Генерация отменена.');
+   try{return combineWeeklyPart(accepted,raw,part,base)}catch(e){e.status=422;throw e}
+  };
+  try{accepted=await generatePart(payload)}catch(e){
+   if(signal?.aborted||e.status!==422||!retryAvailable)throw e;
+   retryAvailable=false;
+   const reasons={BUDGET:'Уменьши стоимость новых покупок с учётом уже открытых упаковок.',DAILY_QUANTITY:'Проверь сумму каждого ингредиента по всем блюдам дня.',PERIOD_QUANTITY:'Не превышай остаток недельного лимита по каждому продукту.',INGREDIENT_QUANTITY:'Проверь целые количества, предельную порцию и доступные продукты.',MISSING_HEAT:'Укажи подходящую технику и полную термообработку.'};
+   const reason=reasons[e.reason]||'Проверь комплектность, ограничения и граммовки.';
+   const retry={...payload,requestId:requestId(),correction:payload.correction+' Предыдущий ответ не прошёл проверку. '+reason};
+   accepted=await generatePart(retry);
+  }
   Object.assign(resume,{accepted,next:i+1,checkedAt:Date.now()});
   onProgress(i+1,groups.length,accepted.plan.length/base.profile.meals.length,days.length);
  }

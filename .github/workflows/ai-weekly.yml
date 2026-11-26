@@ -23,7 +23,7 @@ jobs:
           import {readFile,writeFile} from 'node:fs/promises';
           const base='https://ladno.anufrievdenis1996-4f6.workers.dev';
           const origin='https://anufriev163.github.io';
-          const report={checkedAt:new Date().toISOString(),runId:process.env.GITHUB_RUN_ID,commit:process.env.GITHUB_SHA,fixture:{adults:1,days:7,mealsPerDay:3,budget:6000},result:'not_tested'};
+          const report={checkedAt:new Date().toISOString(),runId:process.env.GITHUB_RUN_ID,commit:process.env.GITHUB_SHA,fixture:{adults:1,days:7,mealsPerDay:3,budget:6000,diet:'Без мяса',allergies:['Молоко'],dislikes:['mushroom']},result:'not_tested'};
           const safeCode=x=>typeof x==='string'&&/^[A-Z0-9_]{1,50}$/.test(x)?x:null;
           try{
             const v=await fetch(base+'/version',{headers:{Origin:origin},redirect:'error',signal:AbortSignal.timeout(12000)});
@@ -35,35 +35,42 @@ jobs:
             const source=await readFile('worker.mjs','utf8');
             const expected=source.match(/version:'(cloudflare-v[0-9]+)'/)?.[1];
             report.expectedVersion=expected||null;
-            if(!expected||server.version!==expected||!server.capabilities?.includes('bounded-direct-generation'))throw Error('DEPLOYMENT_REQUIRED');
+            if(!expected||server.version!==expected||!server.capabilities?.includes('weekly-package-budget'))throw Error('DEPLOYMENT_REQUIRED');
             const worker=new Function(source.slice(0,source.indexOf('const ORIGIN='))+'\nreturn {validInput,validateGenerated};')();
-            const seed={quizV2:true,profileFlowV1:true,profileComplete:true,recipeV4:true,recipeV5:true,wishesV1:true,wishesV2:true,weekFlowV2:true,view:'plan',store:'Пятёрочка',storeChoices:['Пятёрочка'],adults:1,budget:6000,days:[0,1,2,3,4,5,6],meals:['Завтрак','Обед','Ужин'],equipment:['Плита','Духовка','Микроволновка'],diet:'Без ограничений',style:'Разнообразие'};
+            const {adults,budget,diet,allergies,dislikes}=report.fixture;
+            const seed={quizV2:true,profileFlowV1:true,profileComplete:true,recipeV4:true,recipeV5:true,wishesV1:true,wishesV2:true,weekFlowV2:true,view:'plan',store:'Пятёрочка',storeChoices:['Пятёрочка'],adults,budget,days:[0,1,2,3,4,5,6],meals:['Завтрак','Обед','Ужин'],equipment:['Плита','Духовка','Микроволновка'],diet,allergies,dislikes,style:'Разнообразие'};
             const app={innerHTML:'',addEventListener(){}};
             const client=new Function('document','localStorage','location','window','server',js+`
-              const cap={mode:'generate',foodIds:new Set(server.foodIds),customProducts:server.capabilities.includes('custom-products'),zeroBudget:server.capabilities.includes('zero-budget')};
+              const cap={mode:'generate',foodIds:new Set(server.foodIds),customProducts:server.capabilities.includes('custom-products'),zeroBudget:server.capabilities.includes('zero-budget'),weeklyPackageBudget:true};
+              const forbidden=new Set(['chicken','turkey','pork','milk','curd','yogurt','cheese','kefir','mushroom']);
               return {payload:buildAIRequest('',100000,cap),async run(transport){
                 const d=await generateWeeklyParts(cap,null,transport);recipes.splice(baseCount);recipes.push(...d.fresh);s.plan=d.plan;
-                return {slots:s.plan.length,uniqueRecipes:new Set(s.plan.map(x=>x.id)).size,cost:Math.round(total()*100)/100,missingPrices:missingPrices(),items:basket().length,planValid:!auditPlan(s.plan)};
+                const restrictionsVerified=d.fresh.every(r=>Object.keys(r.ingredients).every(id=>!forbidden.has(id)));
+                return {slots:s.plan.length,uniqueRecipes:new Set(s.plan.map(x=>x.id)).size,cost:Math.round(total()*100)/100,missingPrices:missingPrices(),items:basket().length,planValid:!auditPlan(s.plan),restrictionsVerified};
               }};
             `)({querySelector:()=>app},{getItem:()=>JSON.stringify(seed),setItem(){}},{hostname:'anufriev163.github.io',origin},{scrollTo(){}},server);
             const payload=client.payload;
             report.request={valid:worker.validInput(payload),catalogSize:Object.keys(payload.catalog).length,slots:payload.profile.days.length*payload.profile.meals.length,personalDataIncluded:payload.profile.personal!==null};
-            if(!report.request.valid||report.request.personalDataIncluded||report.request.slots!==21)throw Error('INVALID_REQUEST_FIXTURE');
+            if(!report.request.valid||report.request.personalDataIncluded||report.request.slots!==21||payload.profile.diet!==diet||!payload.profile.allergies.includes(allergies[0])||dislikes.some(id=>Object.hasOwn(payload.catalog,id)))throw Error('INVALID_REQUEST_FIXTURE');
             report.parts=[];const start=Date.now();
             const transport=async(correction,timeout,signal,cap,part)=>{
               if(!worker.validInput(part)||part.profile.personal!==null)throw Error('INVALID_PART_REQUEST');
               const at=Date.now();const entry={days:part.profile.days,catalogSize:Object.keys(part.catalog).length,requestBytes:Buffer.byteLength(JSON.stringify(part),'utf8')};report.parts.push(entry);
               const response=await fetch(base+'/api/menu',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(part),redirect:'error',signal:AbortSignal.timeout(timeout+5000)});
               let data=null;try{data=await response.json()}catch{}
-              Object.assign(entry,{status:response.status,cors:response.headers.get('access-control-allow-origin')===origin,ms:Date.now()-at,code:safeCode(data?.code)});
-              if(!response.ok||!entry.cors)throw Error(entry.code||'PART_HTTP_ERROR');
+              Object.assign(entry,{status:response.status,cors:response.headers.get('access-control-allow-origin')===origin,ms:Date.now()-at,code:safeCode(data?.code),reason:safeCode(data?.reason)});
+              if(!response.ok||!entry.cors)throw Object.assign(Error(entry.code||'PART_HTTP_ERROR'),{status:response.status,reason:entry.reason});
+              const generation=data?.generation;
+              entry.reasoningDisabled=generation?.model==='ds/deepseek-v4-flash'&&generation.reasoning==='disabled'&&!(generation.reasoningTokens>0);
+              if(!entry.reasoningDisabled)throw Error('MODEL_MODE_UNVERIFIED');
               let raw;try{raw=JSON.parse(data?.content)}catch{throw Error('MODEL_JSON')}
               entry.serverValidation=!!worker.validateGenerated(raw,part);
               if(!entry.serverValidation)throw Error('SERVER_VALIDATION_FAILED');
               return raw;
             };
             try{report.client=await client.run(transport)}finally{report.durationMs=Date.now()-start}
-            report.result=report.parts.length===7&&report.parts.every(p=>p.days.length===1)&&report.client.slots===21&&report.client.planValid&&report.client.items>0&&report.client.missingPrices===0&&report.client.cost<=seed.budget?'passed':'incomplete_week';
+            const verifiedDays=new Set(report.parts.filter(p=>p.serverValidation).flatMap(p=>p.days));
+            report.result=verifiedDays.size===7&&report.parts.every(p=>p.days.length===1)&&report.client.slots===21&&report.client.planValid&&report.client.restrictionsVerified&&report.client.items>0&&report.client.missingPrices===0&&report.client.cost<=seed.budget?'passed':'incomplete_week';
           }catch(e){report.result=e.message==='DEPLOYMENT_REQUIRED'?'deployment_required':e.name==='TimeoutError'||e.name==='AbortError'?'timeout':'acceptance_error';report.error=safeCode(e.message)||safeCode(e.cause?.code)||'UNKNOWN';}
           await writeFile('diagnostics/ai-weekly-result.json',JSON.stringify(report,null,2)+'\n');
           console.log(JSON.stringify(report,null,2));
@@ -77,3 +84,5 @@ jobs:
           git commit -m 'Record full weekly AI acceptance'
           git pull --rebase origin main
           git push origin HEAD:main
+      - name: Require successful weekly generation
+        run: node --input-type=module -e 'import {readFileSync} from "node:fs"; if(JSON.parse(readFileSync("diagnostics/ai-weekly-result.json")).result!=="passed") process.exit(1)'

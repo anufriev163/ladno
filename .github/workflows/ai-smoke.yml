@@ -30,17 +30,15 @@ jobs:
             echo 'status=invalid_account' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Only update the existing production worker in the known account.
-          subdomain="$(curl --fail --silent --max-time 15 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | node -e 'let s="";process.stdin.on("data",x=>s+=x);process.stdin.on("end",()=>{try{let d=JSON.parse(s);if(d.success)process.stdout.write(d.result.subdomain||"")}catch{}})')"
-          if [ "$subdomain" != "anufrievdenis1996-4f6" ]; then
-            echo 'status=account_unverified' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          # A token scoped to ladno can verify that Worker directly.
           if ! curl --fail --silent --max-time 15 -o /dev/null -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/ladno/settings"; then
             echo 'status=worker_unverified' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if npx --yes wrangler@4.44.0 deploy --config wrangler.toml --name ladno --keep-vars; then
+          export WRANGLER_OUTPUT_FILE_PATH="$RUNNER_TEMP/ladno-wrangler.ndjson"
+          if npx --yes wrangler@4.44.0 versions upload --config wrangler.toml --name ladno &&
+            version_id="$(node --input-type=module -e 'import {readFileSync} from "node:fs"; const rows=readFileSync(process.env.WRANGLER_OUTPUT_FILE_PATH,"utf8").trim().split("\n").map(line=>JSON.parse(line)); const id=rows.findLast(row=>row.type==="version-upload")?.version_id; if(!/^[a-f0-9-]{36}$/i.test(id)) process.exit(1); process.stdout.write(id)')" &&
+            npx --yes wrangler@4.44.0 versions deploy "$version_id@100%" --config wrangler.toml --name ladno --yes; then
             echo 'status=deployed' >> "$GITHUB_OUTPUT"
           else
             echo 'status=deploy_failed' >> "$GITHUB_OUTPUT"
@@ -76,7 +74,7 @@ jobs:
             const v=await read('/version');
             report.version={status:v.status,cors:v.cors,ready:v.data?.ready===true,api:Number.isInteger(v.data?.api)?v.data.api:null,version:typeof v.data?.version==='string'&&/^cloudflare-v[0-9]+$/.test(v.data.version)?v.data.version:null};
             if(!v.ok||!v.cors||!v.data?.ready||!v.data?.capabilities?.includes('generate-recipes')){report.result='version_not_ready'}
-            else if(!expected||v.data.version!==expected||!v.data.capabilities?.includes('bounded-direct-generation')){report.result='deployment_required'}
+            else if(!expected||v.data.version!==expected||!v.data.capabilities?.includes('weekly-package-budget')){report.result='deployment_required'}
             else{
               const pre=await read('/api/menu',{method:'OPTIONS',headers:{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'}});
               report.preflight={status:pre.status,cors:pre.cors};
@@ -86,14 +84,18 @@ jobs:
                 const limits={rice:120,chicken:250,carrot:180,oil:20};
                 const req={mode:'generate',catalog,profile:{personal:null,store:'Пятёрочка',stores:['Пятёрочка'],goal:'Обычное питание',likes:[],customDislikes:[],adults:1,children:0,servings:1,days:[0],meals:['Обед'],equipment:['Плита'],diet:'Без ограничений',style:'Разнообразие',allergies:[],dislikes:[],dislikeNames:[],pantry:[],budget:1500,weeklyExtras:[],weeklyExtrasKnownCost:0,weeklyExtrasUnknownPrices:0,wishes:[],quantityLimits:limits,dailyQuantityLimits:limits,servingQuantityLimits:limits},correction:'',timeoutMs:65000,requestId:'check_'+Date.now().toString(36)+'_'+process.env.GITHUB_RUN_ID};
                 const r=await read('/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(req)},75000);
-                report.generation={status:r.status,cors:r.cors,ms:r.ms,code:safeCode(r.data?.code),upstreamStatus:Number.isInteger(r.data?.upstreamStatus)?r.data.upstreamStatus:null,stage:['fetch','decode','processing'].includes(r.data?.stage)?r.data.stage:null};
+                report.generation={status:r.status,cors:r.cors,ms:r.ms,code:safeCode(r.data?.code),reason:safeCode(r.data?.reason),upstreamStatus:Number.isInteger(r.data?.upstreamStatus)?r.data.upstreamStatus:null,stage:['fetch','decode','processing'].includes(r.data?.stage)?r.data.stage:null};
                 if(!r.ok||!r.cors)report.result='generation_http_error';
                 else{
                   let raw;try{raw=JSON.parse(r.data?.content)}catch{}
                   const x=raw?.plan?.[0],recipe=raw?.recipes?.[x?.id];
                   let cost=0,valid=Array.isArray(raw?.plan)&&raw.plan.length===1&&x.day===0&&x.meal==='Обед'&&Number.isInteger(x.id)&&recipe?.type==='Обед'&&typeof recipe?.name==='string'&&typeof recipe?.method==='string'&&recipe?.ingredients&&Array.isArray(recipe.equipment)&&recipe.equipment.every(e=>req.profile.equipment.includes(e));
                   if(valid){const entries=Object.entries(recipe.ingredients);valid=entries.length>0&&entries.every(([id,n])=>{if(!Object.hasOwn(catalog,id)||!Number.isInteger(n)||n<1||n>limits[id])return false;const f=catalog[id];cost+=Math.ceil(n/f.package)*f.package*f.price/1000;return true})&&cost<=1500}
-                  report.result=valid?'passed':'invalid_recipe';
+                  const generation=r.data.generation;
+                  report.generation.model=generation?.model==='ds/deepseek-v4-flash'?generation.model:null;
+                  report.generation.reasoning=generation?.reasoning==='disabled'?generation.reasoning:null;
+                  report.generation.reasoningTokens=Number.isSafeInteger(generation?.reasoningTokens)?generation.reasoningTokens:null;
+                  report.result=valid&&report.generation.model&&report.generation.reasoning&&!(report.generation.reasoningTokens>0)?'passed':'invalid_recipe';
                   if(valid)report.generation.fixtureCost=Math.round(cost*100)/100;
                 }
               }
@@ -112,3 +114,5 @@ jobs:
           git commit -m 'Record AI connectivity smoke test'
           git pull --rebase origin main
           git push origin HEAD:main
+      - name: Require successful deployment and recipe generation
+        run: node --input-type=module -e 'import {readFileSync} from "node:fs"; const report=JSON.parse(readFileSync("diagnostics/ai-smoke-result.json")); if(report.deployment!=="deployed"||report.result!=="passed") process.exit(1)'

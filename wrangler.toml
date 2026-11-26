@@ -1,8 +1,9 @@
-name = "nalegke-api"
+name = "ladno"
 main = "worker.mjs"
 compatibility_date = "2025-09-01"
 workers_dev = true
 preview_urls = false
+keep_vars = true
 
 [vars]
 DAILY_AI_LIMIT = "50"
