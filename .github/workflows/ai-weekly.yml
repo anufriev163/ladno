@@ -33,6 +33,9 @@ jobs:
             const html=await readFile('index.html','utf8');
             const js=html.match(/<script>([\s\S]*?)<\/script>/)[1];
             const source=await readFile('worker.mjs','utf8');
+            const expected=source.match(/version:'(cloudflare-v[0-9]+)'/)?.[1];
+            report.expectedVersion=expected||null;
+            if(!expected||server.version!==expected||!server.capabilities?.includes('bounded-direct-generation'))throw Error('DEPLOYMENT_REQUIRED');
             const worker=new Function(source.slice(0,source.indexOf('const ORIGIN='))+'\nreturn {validInput,validateGenerated};')();
             const seed={quizV2:true,profileFlowV1:true,profileComplete:true,recipeV4:true,recipeV5:true,wishesV1:true,wishesV2:true,weekFlowV2:true,view:'plan',store:'Пятёрочка',storeChoices:['Пятёрочка'],adults:1,budget:6000,days:[0,1,2,3,4,5,6],meals:['Завтрак','Обед','Ужин'],equipment:['Плита','Духовка','Микроволновка'],diet:'Без ограничений',style:'Разнообразие'};
             const app={innerHTML:'',addEventListener(){}};
@@ -61,7 +64,7 @@ jobs:
             };
             try{report.client=await client.run(transport)}finally{report.durationMs=Date.now()-start}
             report.result=report.parts.length===7&&report.parts.every(p=>p.days.length===1)&&report.client.slots===21&&report.client.planValid&&report.client.items>0&&report.client.missingPrices===0&&report.client.cost<=seed.budget?'passed':'incomplete_week';
-          }catch(e){report.result=e.name==='TimeoutError'||e.name==='AbortError'?'timeout':'acceptance_error';report.error=safeCode(e.message)||safeCode(e.cause?.code)||'UNKNOWN';}
+          }catch(e){report.result=e.message==='DEPLOYMENT_REQUIRED'?'deployment_required':e.name==='TimeoutError'||e.name==='AbortError'?'timeout':'acceptance_error';report.error=safeCode(e.message)||safeCode(e.cause?.code)||'UNKNOWN';}
           await writeFile('diagnostics/ai-weekly-result.json',JSON.stringify(report,null,2)+'\n');
           console.log(JSON.stringify(report,null,2));
           NODE
