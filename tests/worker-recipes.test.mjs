@@ -14,8 +14,11 @@ test('allergy profile only receives instructions built from checked ingredients'
 
  modelRecipe={...recipe,steps:[{action:'boil',ids:['rice','milk']}]};
  let response=await fetchMenu();
- assert.equal(response.status,422);
- assert.equal((await response.json()).reason,'RECIPE_STEPS');
+ assert.equal(response.status,200);
+ const repaired=JSON.parse((await response.json()).content).recipes[0];
+ assert.equal(repaired.name,'Рис');
+ assert.equal(repaired.method,'Отварите до полной готовности: рис, вода. Подайте вместе: рис.');
+ assert.deepEqual(repaired.steps,[{action:'boil',ids:['rice','water']},{action:'serve',ids:['rice']}]);
 
  modelRecipe={...recipe,ingredients:{rice:80,milk:50},steps:[{action:'boil',ids:['rice','milk']}]};
  response=await fetchMenu();
@@ -36,7 +39,7 @@ test('allergy profile only receives instructions built from checked ingredients'
  modelRecipe={...recipe,steps:[{action:'bake',ids:['rice']}]};
  response=await fetchMenu();
  assert.equal(response.status,200);
- const repaired=JSON.parse((await response.json()).content).recipes[0];
- assert.deepEqual(repaired.equipment,['Плита']);
- assert.deepEqual(repaired.steps,[{action:'boil',ids:['rice','water']},{action:'serve',ids:['rice']}]);
+ const cooked=JSON.parse((await response.json()).content).recipes[0];
+ assert.deepEqual(cooked.equipment,['Плита']);
+ assert.deepEqual(cooked.steps,[{action:'boil',ids:['rice','water']},{action:'serve',ids:['rice']}]);
 });

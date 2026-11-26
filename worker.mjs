@@ -24,9 +24,6 @@ function safeDefaultSteps(ingredients,equipment){
  if(!action)return [];
  return [...(hot.includes('flour')?[{action:'mix',ids:['flour','water']}]:[]),{action,ids:[...hot,'water']},{action:'serve',ids}];
 }
-function hasUndeclaredStepIngredient(steps,ingredients){
- return Array.isArray(steps)&&steps.some(step=>Array.isArray(step?.ids)&&step.ids.some(id=>typeof id==='string'&&id!=='water'&&!Object.hasOwn(ingredients,id)));
-}
 function renderCookingSteps(recipe,catalog,ingredients,availableEquipment){
  if(!Array.isArray(recipe.steps)||recipe.steps.length<1||recipe.steps.length>6)return null;
  const used=new Set(),cooked=new Set(),equipment=new Set(),lines=[];
@@ -158,9 +155,9 @@ function validateGenerated(result,data,reject=()=>null){
   }
   const ingredients=Object.fromEntries(entries);
   let steps=r.steps;
-  if(structured&&hasUndeclaredStepIngredient(steps,ingredients))return reject('RECIPE_STEPS');
   let instructions=structured?renderCookingSteps(r,data.catalog,ingredients,p.equipment):r,usedDefaultSteps=false;
   if(structured&&!instructions){
+   // Discard the entire model method if it references anything outside the recipe.
    steps=safeDefaultSteps(ingredients,p.equipment);
    instructions=renderCookingSteps({steps},data.catalog,ingredients,p.equipment);
    usedDefaultSteps=true;
