@@ -1,9 +1,10 @@
 name: Full weekly AI acceptance
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ['AI connectivity smoke test']
     branches: [main]
-    paths: ['.github/workflows/ai-weekly.yml']
+    types: [completed]
 permissions:
   contents: write
 concurrency:
@@ -11,6 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   acceptance:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 13
     steps:
@@ -23,7 +25,7 @@ jobs:
           import {readFile,writeFile} from 'node:fs/promises';
           const base='https://ladno.anufrievdenis1996-4f6.workers.dev';
           const origin='https://anufriev163.github.io';
-          const report={checkedAt:new Date().toISOString(),runId:process.env.GITHUB_RUN_ID,commit:process.env.GITHUB_SHA,fixture:{adults:1,days:7,mealsPerDay:3,budget:6000,diet:'Без мяса',allergies:['Молоко'],dislikes:['mushroom']},result:'not_tested'};
+          const report={checkedAt:new Date().toISOString(),runId:process.env.GITHUB_RUN_ID,commit:process.env.GITHUB_SHA,fixture:{adults:1,days:7,mealsPerDay:3,budget:4500,diet:'Без мяса',allergies:['Молоко'],dislikes:[],equipment:['Плита']},result:'not_tested'};
           const safeCode=x=>typeof x==='string'&&/^[A-Z0-9_]{1,50}$/.test(x)?x:null;
           try{
             const v=await fetch(base+'/version',{headers:{Origin:origin},redirect:'error',signal:AbortSignal.timeout(12000)});
@@ -35,17 +37,17 @@ jobs:
             const source=await readFile('worker.mjs','utf8');
             const expected=source.match(/version:'(cloudflare-v[0-9]+)'/)?.[1];
             report.expectedVersion=expected||null;
-            if(!expected||server.version!==expected||!server.capabilities?.includes('weekly-package-budget'))throw Error('DEPLOYMENT_REQUIRED');
+            if(!expected||server.version!==expected||!server.capabilities?.includes('structured-recipe-steps'))throw Error('DEPLOYMENT_REQUIRED');
             const worker=new Function(source.slice(0,source.indexOf('const ORIGIN='))+'\nreturn {validInput,validateGenerated};')();
-            const {adults,budget,diet,allergies,dislikes}=report.fixture;
-            const seed={quizV2:true,profileFlowV1:true,profileComplete:true,recipeV4:true,recipeV5:true,wishesV1:true,wishesV2:true,weekFlowV2:true,view:'plan',store:'Пятёрочка',storeChoices:['Пятёрочка'],adults,budget,days:[0,1,2,3,4,5,6],meals:['Завтрак','Обед','Ужин'],equipment:['Плита','Духовка','Микроволновка'],diet,allergies,dislikes,style:'Разнообразие'};
+            const {adults,budget,diet,allergies,dislikes,equipment}=report.fixture;
+            const seed={quizV2:true,profileFlowV1:true,profileComplete:true,recipeV4:true,recipeV5:true,wishesV1:true,wishesV2:true,weekFlowV2:true,view:'plan',store:'Пятёрочка',storeChoices:['Пятёрочка'],adults,budget,days:[0,1,2,3,4,5,6],meals:['Завтрак','Обед','Ужин'],equipment,diet,allergies,dislikes,style:'Разнообразие'};
             const app={innerHTML:'',addEventListener(){}};
             const client=new Function('document','localStorage','location','window','server',js+`
-              const cap={mode:'generate',foodIds:new Set(server.foodIds),customProducts:server.capabilities.includes('custom-products'),zeroBudget:server.capabilities.includes('zero-budget'),weeklyPackageBudget:true};
-              const forbidden=new Set(['chicken','turkey','pork','milk','curd','yogurt','cheese','kefir','mushroom']);
+              const cap={mode:'generate',foodIds:new Set(server.foodIds),customProducts:server.capabilities.includes('custom-products'),zeroBudget:server.capabilities.includes('zero-budget'),weeklyPackageBudget:true,recipeSteps:true};
+              const forbidden=new Set(['chicken','turkey','pork','milk','curd','yogurt','cheese','kefir']);
               return {payload:buildAIRequest('',100000,cap),async run(transport){
                 const d=await generateWeeklyParts(cap,null,transport);recipes.splice(baseCount);recipes.push(...d.fresh);s.plan=d.plan;
-                const restrictionsVerified=d.fresh.every(r=>Object.keys(r.ingredients).every(id=>!forbidden.has(id)));
+                const restrictionsVerified=d.fresh.every(r=>r.verifiedSteps&&Object.keys(r.ingredients).every(id=>!forbidden.has(id)));
                 return {slots:s.plan.length,uniqueRecipes:new Set(s.plan.map(x=>x.id)).size,cost:Math.round(total()*100)/100,missingPrices:missingPrices(),items:basket().length,planValid:!auditPlan(s.plan),restrictionsVerified};
               }};
             `)({querySelector:()=>app},{getItem:()=>JSON.stringify(seed),setItem(){}},{hostname:'anufriev163.github.io',origin},{scrollTo(){}},server);

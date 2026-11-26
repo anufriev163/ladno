@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+      - name: Verify allergy and ingredient validation
+        run: node --test tests/worker-recipes.test.mjs
       - name: Deploy existing Cloudflare worker if credentials are configured
         id: deploy
         shell: bash
@@ -74,7 +76,7 @@ jobs:
             const v=await read('/version');
             report.version={status:v.status,cors:v.cors,ready:v.data?.ready===true,api:Number.isInteger(v.data?.api)?v.data.api:null,version:typeof v.data?.version==='string'&&/^cloudflare-v[0-9]+$/.test(v.data.version)?v.data.version:null};
             if(!v.ok||!v.cors||!v.data?.ready||!v.data?.capabilities?.includes('generate-recipes')){report.result='version_not_ready'}
-            else if(!expected||v.data.version!==expected||!v.data.capabilities?.includes('weekly-package-budget')){report.result='deployment_required'}
+            else if(!expected||v.data.version!==expected||!v.data.capabilities?.includes('structured-recipe-steps')){report.result='deployment_required'}
             else{
               const pre=await read('/api/menu',{method:'OPTIONS',headers:{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'}});
               report.preflight={status:pre.status,cors:pre.cors};
@@ -82,7 +84,7 @@ jobs:
               else{
                 const catalog={rice:{name:'Рис',price:150,package:800,unit:'г'},chicken:{name:'Куриное филе',price:450,package:500,unit:'г'},carrot:{name:'Морковь',price:80,package:1000,unit:'г'},oil:{name:'Растительное масло',price:150,package:500,unit:'мл'}};
                 const limits={rice:120,chicken:250,carrot:180,oil:20};
-                const req={mode:'generate',catalog,profile:{personal:null,store:'Пятёрочка',stores:['Пятёрочка'],goal:'Обычное питание',likes:[],customDislikes:[],adults:1,children:0,servings:1,days:[0],meals:['Обед'],equipment:['Плита'],diet:'Без ограничений',style:'Разнообразие',allergies:[],dislikes:[],dislikeNames:[],pantry:[],budget:1500,weeklyExtras:[],weeklyExtrasKnownCost:0,weeklyExtrasUnknownPrices:0,wishes:[],quantityLimits:limits,dailyQuantityLimits:limits,servingQuantityLimits:limits},correction:'',timeoutMs:65000,requestId:'check_'+Date.now().toString(36)+'_'+process.env.GITHUB_RUN_ID};
+                const req={mode:'generate',recipeSteps:true,catalog,profile:{personal:null,store:'Пятёрочка',stores:['Пятёрочка'],goal:'Обычное питание',likes:[],customDislikes:[],adults:1,children:0,servings:1,days:[0],meals:['Обед'],equipment:['Плита'],diet:'Без ограничений',style:'Разнообразие',allergies:[],dislikes:[],dislikeNames:[],pantry:[],budget:1500,weeklyExtras:[],weeklyExtrasKnownCost:0,weeklyExtrasUnknownPrices:0,wishes:[],quantityLimits:limits,dailyQuantityLimits:limits,servingQuantityLimits:limits},correction:'',timeoutMs:65000,requestId:'check_'+Date.now().toString(36)+'_'+process.env.GITHUB_RUN_ID};
                 const r=await read('/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(req)},75000);
                 report.generation={status:r.status,cors:r.cors,ms:r.ms,code:safeCode(r.data?.code),reason:safeCode(r.data?.reason),upstreamStatus:Number.isInteger(r.data?.upstreamStatus)?r.data.upstreamStatus:null,stage:['fetch','decode','processing'].includes(r.data?.stage)?r.data.stage:null};
                 if(!r.ok||!r.cors)report.result='generation_http_error';
@@ -95,7 +97,8 @@ jobs:
                   report.generation.model=generation?.model==='ds/deepseek-v4-flash'?generation.model:null;
                   report.generation.reasoning=generation?.reasoning==='disabled'?generation.reasoning:null;
                   report.generation.reasoningTokens=Number.isSafeInteger(generation?.reasoningTokens)?generation.reasoningTokens:null;
-                  report.result=valid&&report.generation.model&&report.generation.reasoning&&!(report.generation.reasoningTokens>0)?'passed':'invalid_recipe';
+                  report.generation.verifiedSteps=recipe?.verifiedSteps===true&&Array.isArray(recipe?.steps)&&recipe.steps.length>0;
+                  report.result=valid&&report.generation.verifiedSteps&&report.generation.model&&report.generation.reasoning&&!(report.generation.reasoningTokens>0)?'passed':'invalid_recipe';
                   if(valid)report.generation.fixtureCost=Math.round(cost*100)/100;
                 }
               }
