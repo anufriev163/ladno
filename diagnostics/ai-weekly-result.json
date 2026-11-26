@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-11-26T15:23:30.509Z",
-  "runId": "45848604180",
-  "commit": "3a50dfba9963ccec2883ab55e0e6b769cc2d2538",
+  "checkedAt": "2026-11-26T15:30:02.464Z",
+  "runId": "45849677821",
+  "commit": "8bdc482abd8f9517c250b569e3cdf95f182ef39f",
   "fixture": {
     "adults": 1,
     "days": 7,
@@ -16,7 +16,7 @@
       "Плита"
     ]
   },
-  "result": "acceptance_error",
+  "result": "passed",
   "version": {
     "status": 200,
     "ready": true,
@@ -38,7 +38,7 @@
       "requestBytes": 4415,
       "status": 200,
       "cors": true,
-      "ms": 8439,
+      "ms": 8167,
       "code": null,
       "reason": null,
       "reasoningDisabled": true,
@@ -49,34 +49,10 @@
         1
       ],
       "catalogSize": 28,
-      "requestBytes": 4531,
-      "status": 422,
-      "cors": true,
-      "ms": 6021,
-      "code": "MODEL_PLAN",
-      "reason": "INGREDIENT_QUANTITY"
-    },
-    {
-      "days": [
-        1
-      ],
-      "catalogSize": 28,
-      "requestBytes": 4713,
-      "status": 422,
-      "cors": true,
-      "ms": 7720,
-      "code": "MODEL_PLAN",
-      "reason": "INGREDIENT_QUANTITY"
-    },
-    {
-      "days": [
-        1
-      ],
-      "catalogSize": 28,
-      "requestBytes": 4714,
+      "requestBytes": 4517,
       "status": 200,
       "cors": true,
-      "ms": 7180,
+      "ms": 7423,
       "code": null,
       "reason": null,
       "reasoningDisabled": true,
@@ -87,10 +63,24 @@
         2
       ],
       "catalogSize": 28,
-      "requestBytes": 4564,
+      "requestBytes": 4515,
+      "status": 422,
+      "cors": true,
+      "ms": 7014,
+      "code": "MODEL_PLAN",
+      "reason": "RECIPE_STEPS",
+      "ingredient": null,
+      "max": null
+    },
+    {
+      "days": [
+        2
+      ],
+      "catalogSize": 28,
+      "requestBytes": 4737,
       "status": 200,
       "cors": true,
-      "ms": 7868,
+      "ms": 6511,
       "code": null,
       "reason": null,
       "reasoningDisabled": true,
@@ -101,26 +91,94 @@
         3
       ],
       "catalogSize": 28,
-      "requestBytes": 4586,
-      "status": 422,
+      "requestBytes": 4524,
+      "status": 200,
       "cors": true,
-      "ms": 7957,
-      "code": "MODEL_PLAN",
-      "reason": "INGREDIENT_QUANTITY"
+      "ms": 11760,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
     },
     {
       "days": [
-        3
+        4
       ],
       "catalogSize": 28,
-      "requestBytes": 4768,
+      "requestBytes": 4508,
+      "status": 200,
+      "cors": true,
+      "ms": 12508,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        5
+      ],
+      "catalogSize": 28,
+      "requestBytes": 4551,
       "status": 422,
       "cors": true,
-      "ms": 5969,
+      "ms": 14585,
       "code": "MODEL_PLAN",
-      "reason": "PLAN_SHAPE"
+      "reason": "RECIPE_STEPS",
+      "ingredient": null,
+      "max": null
+    },
+    {
+      "days": [
+        5
+      ],
+      "catalogSize": 28,
+      "requestBytes": 4773,
+      "status": 200,
+      "cors": true,
+      "ms": 21156,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        6
+      ],
+      "catalogSize": 28,
+      "requestBytes": 4550,
+      "status": 422,
+      "cors": true,
+      "ms": 12356,
+      "code": "MODEL_PLAN",
+      "reason": "RECIPE_STEPS",
+      "ingredient": null,
+      "max": null
+    },
+    {
+      "days": [
+        6
+      ],
+      "catalogSize": 28,
+      "requestBytes": 4771,
+      "status": 200,
+      "cors": true,
+      "ms": 6542,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
     }
   ],
-  "durationMs": 51164,
-  "error": "MODEL_PLAN"
+  "client": {
+    "slots": 21,
+    "uniqueRecipes": 21,
+    "cost": 2462.77,
+    "missingPrices": 0,
+    "items": 17,
+    "planValid": true,
+    "restrictionsVerified": true
+  },
+  "durationMs": 108046
 }
