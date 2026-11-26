@@ -1,51 +1,26 @@
 {
-  "checkedAt": "2026-11-26T10:25:19.153Z",
-  "runId": "45801157168",
-  "commit": "604d384ac123c1c6d570c64a7ebad3d03dcab88c",
+  "checkedAt": "2026-11-26T10:49:30.483Z",
+  "runId": "45804878933",
+  "commit": "7d0236aa240935062d1effdc27ace3f2b873e8f5",
   "fixture": {
     "adults": 1,
     "days": 7,
     "mealsPerDay": 3,
-    "budget": 6000
+    "budget": 6000,
+    "diet": "Без мяса",
+    "allergies": [
+      "Молоко"
+    ],
+    "dislikes": [
+      "mushroom"
+    ]
   },
-  "result": "acceptance_error",
+  "result": "deployment_required",
   "version": {
     "status": 200,
     "ready": true,
     "version": "cloudflare-v7"
   },
   "expectedVersion": "cloudflare-v7",
-  "request": {
-    "valid": true,
-    "catalogSize": 63,
-    "slots": 21,
-    "personalDataIncluded": false
-  },
-  "parts": [
-    {
-      "days": [
-        0
-      ],
-      "catalogSize": 42,
-      "requestBytes": 6209,
-      "status": 200,
-      "cors": true,
-      "ms": 7367,
-      "code": null,
-      "serverValidation": true
-    },
-    {
-      "days": [
-        1
-      ],
-      "catalogSize": 42,
-      "requestBytes": 6209,
-      "status": 422,
-      "cors": true,
-      "ms": 7854,
-      "code": "MODEL_PLAN"
-    }
-  ],
-  "durationMs": 15228,
-  "error": "MODEL_PLAN"
+  "error": "DEPLOYMENT_REQUIRED"
 }
