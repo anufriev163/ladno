@@ -12,10 +12,10 @@ concurrency:
 jobs:
   acceptance:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Test one actual full-week generation
+      - name: Test actual batched full-week generation
         shell: bash
         run: |
           mkdir -p diagnostics
@@ -38,27 +38,29 @@ jobs:
             const app={innerHTML:'',addEventListener(){}};
             const client=new Function('document','localStorage','location','window','server',js+`
               const cap={mode:'generate',foodIds:new Set(server.foodIds),customProducts:server.capabilities.includes('custom-products'),zeroBudget:server.capabilities.includes('zero-budget')};
-              return {payload:buildAIRequest('',100000,cap),decode(raw,catalog){
-                const d=decodeAI(raw,catalog);recipes.splice(baseCount);recipes.push(...d.fresh);s.plan=d.plan;
-                const issue=auditPlan(s.plan);
-                return {slots:s.plan.length,uniqueRecipes:new Set(s.plan.map(x=>x.id)).size,cost:Math.round(total()*100)/100,missingPrices:missingPrices(),items:basket().length,planValid:!issue};
+              return {payload:buildAIRequest('',100000,cap),async run(transport){
+                const d=await generateWeeklyParts(cap,null,transport);recipes.splice(baseCount);recipes.push(...d.fresh);s.plan=d.plan;
+                return {slots:s.plan.length,uniqueRecipes:new Set(s.plan.map(x=>x.id)).size,cost:Math.round(total()*100)/100,missingPrices:missingPrices(),items:basket().length,planValid:!auditPlan(s.plan)};
               }};
             `)({querySelector:()=>app},{getItem:()=>JSON.stringify(seed),setItem(){}},{hostname:'anufriev163.github.io',origin},{scrollTo(){}},server);
             const payload=client.payload;
             report.request={valid:worker.validInput(payload),catalogSize:Object.keys(payload.catalog).length,slots:payload.profile.days.length*payload.profile.meals.length,personalDataIncluded:payload.profile.personal!==null};
             if(!report.request.valid||report.request.personalDataIncluded||report.request.slots!==21)throw Error('INVALID_REQUEST_FIXTURE');
-            const start=Date.now();
-            const response=await fetch(base+'/api/menu',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(110000)});
-            let data=null;try{data=await response.json()}catch{}
-            report.generation={status:response.status,cors:response.headers.get('access-control-allow-origin')===origin,ms:Date.now()-start,code:safeCode(data?.code)};
-            if(!response.ok||!report.generation.cors){report.result='generation_http_error'}
-            else{
+            report.parts=[];const start=Date.now();
+            const transport=async(correction,timeout,signal,cap,part)=>{
+              if(!worker.validInput(part)||part.profile.personal!==null)throw Error('INVALID_PART_REQUEST');
+              const at=Date.now();const entry={days:part.profile.days};report.parts.push(entry);
+              const response=await fetch(base+'/api/menu',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(part),redirect:'error',signal:AbortSignal.timeout(timeout+5000)});
+              let data=null;try{data=await response.json()}catch{}
+              Object.assign(entry,{status:response.status,cors:response.headers.get('access-control-allow-origin')===origin,ms:Date.now()-at,code:safeCode(data?.code)});
+              if(!response.ok||!entry.cors)throw Error(entry.code||'PART_HTTP_ERROR');
               let raw;try{raw=JSON.parse(data?.content)}catch{throw Error('MODEL_JSON')}
-              report.serverValidation=!!worker.validateGenerated(raw,payload);
-              if(!report.serverValidation)throw Error('SERVER_VALIDATION_FAILED');
-              try{report.client=client.decode(raw,payload.catalog)}catch{throw Error('CLIENT_VALIDATION_FAILED')}
-              report.result=report.client.slots===21&&report.client.planValid&&report.client.items>0&&report.client.missingPrices===0&&report.client.cost<=seed.budget?'passed':'incomplete_week';
-            }
+              entry.serverValidation=!!worker.validateGenerated(raw,part);
+              if(!entry.serverValidation)throw Error('SERVER_VALIDATION_FAILED');
+              return raw;
+            };
+            try{report.client=await client.run(transport)}finally{report.durationMs=Date.now()-start}
+            report.result=report.parts.length===4&&report.client.slots===21&&report.client.planValid&&report.client.items>0&&report.client.missingPrices===0&&report.client.cost<=seed.budget?'passed':'incomplete_week';
           }catch(e){report.result=e.name==='TimeoutError'||e.name==='AbortError'?'timeout':'acceptance_error';report.error=safeCode(e.message)||safeCode(e.cause?.code)||'UNKNOWN';}
           await writeFile('diagnostics/ai-weekly-result.json',JSON.stringify(report,null,2)+'\n');
           console.log(JSON.stringify(report,null,2));
