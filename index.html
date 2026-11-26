@@ -292,6 +292,97 @@ html.keyboard-open{scroll-padding-bottom:var(--s4)}
 }
 @media(min-width:1600px){#app:has(>.tabbar)>main{padding-inline:56px}}
 
+
+/* Tablet: use the full portrait canvas, retain the bottom touch navigation.
+   The desktop sidebar remains in landscape at 960px and wider. */
+@media (min-width:600px) and (max-width:959px), (min-width:960px) and (max-width:1200px) and (orientation:portrait){
+ :root{--max-width:100%;--gutter:32px;--bar-height:104px;--h1:2rem;--body:1.0625rem}
+ html{scroll-padding-block:20px calc(var(--bar-height) + 20px + env(safe-area-inset-bottom))}
+ #app,#app:has(>.tabbar){display:flex;flex-direction:column;align-items:stretch;max-width:1100px;width:100%;min-height:100vh;min-height:100dvh;margin:auto}
+ #app:has(>.tabbar)>header,#app:has(>.tabbar)>header:not(:has(.back)){display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);padding:calc(16px + env(safe-area-inset-top)) 32px 12px;min-height:68px;align-items:center}
+ #app:has(>.tabbar)>header .brand{visibility:visible}
+ #app:has(>.tabbar)>main,#app:has(>.tabbar)>header:has(.back)+main{width:100%;max-width:none;flex:1;min-width:0;padding:32px 32px calc(var(--bar-height) + 28px + env(safe-area-inset-bottom))}
+ #app>.tabbar{position:fixed;left:50%;top:auto;bottom:0;transform:translateX(-50%);width:min(100%,1100px);max-width:none;height:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:8px;padding:8px 32px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--line);border-right:0;background:#fff;overflow:visible;margin:0}
+ .desktop-brand,.desktop-nav-label{display:none}
+ .tabbar .tab{min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:.9375rem;text-align:center;padding:6px 8px;border-radius:10px}
+ .tabbar .tab svg{width:26px;height:26px}
+ .tabbar .tab.selected{color:var(--ink);background:var(--soft);font-weight:750}
+ .tab-content h1{margin-bottom:24px}
+ .plan-heading{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:28px}
+ .plan-heading h1{flex-basis:auto;margin:0}
+ .refresh-pill{min-height:48px;flex:0 0 auto;font-size:1rem}
+ .week-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 24px;align-items:start}
+ .week-grid .day-section{min-width:0;margin:0;border-top:2px solid var(--ink);padding:16px 0 0}
+ .day-section .day-nutrition{font-size:.875rem;min-height:3em;margin:8px 0 12px;line-height:1.45}
+ .mealinfo b{font-size:1.125rem;line-height:1.4}
+ .meal-actions{gap:8px}
+ .meal-actions .secondary,.meal-actions .link{min-height:48px}
+ .shopping-layout{display:flex;flex-direction:column;gap:24px;align-items:stretch}
+ .shopping-summary{margin:0;padding:24px;background:#fff;border:1px solid var(--line)}
+ .shopping-summary .amount{font-size:2.5rem}
+ .shopping-items,.shopping-actions{display:block;min-width:0}
+ .shopping-items .checklist-heading{margin:0 0 24px}
+ .shopping-items .grocery{min-height:72px}
+ .shopping-actions .store-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .shopping-actions .order-area{margin-top:24px}
+ .recipe-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:28px;align-items:start}
+ .recipe-ingredients,.recipe-method{display:block;min-width:0}
+ .recipe-layout h2{margin:24px 0 14px}
+ .recipe-method .steps{margin-top:0}
+ #app:has(>.tabbar)>main.narrow-page{max-width:780px;align-self:center}
+ .narrow-page>.primary,.narrow-page .empty-state .primary{width:min(100%,420px)}
+ .narrow-page .extra-form,.narrow-page .budget-slider{max-width:650px}
+ .action-stack,.notice{max-width:620px}
+ #app:has(>.quiz-content){max-width:880px;width:100%}
+ #app:has(>.quiz-content)>header{padding:calc(16px + env(safe-area-inset-top)) 32px 12px}
+ #app:has(>.quiz-content)>.progress{margin:0 32px}
+ #app>.quiz-content:not(.welcome-main){width:100%;flex:1;padding:32px 32px calc(var(--bar-height) + 32px + env(safe-area-inset-bottom))}
+ .quiz-content:not(.welcome-main) h1{font-size:2rem}
+ .quiz-content .wide,.quiz-content .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .quiz-content .store-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .quiz-content .days{grid-template-columns:repeat(7,minmax(0,1fr))}
+ .quiz-content .allergy-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .quiz-content .allergy-grid .chip:first-child{grid-column:1/-1}
+ .quiz-content .food-results{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
+ .quiz-content .extra-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
+ .quiz-content .extra-form .inline-error{grid-column:1/-1}
+ #app:has(>.quiz-content)>.footer{position:fixed;top:auto;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,880px);max-width:none;margin:0;padding:12px 32px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+ #app:has(>.quiz-content)>.footer .primary{display:flex;width:min(100%,420px);margin:0 auto}
+ #app:has(>.welcome-main){max-width:880px;justify-content:center}
+ #app>.welcome-main{flex:1;display:flex;align-items:stretch;padding:calc(clamp(36px,8vh,90px) + env(safe-area-inset-top)) 32px calc(var(--bar-height) + 24px + env(safe-area-inset-bottom))}
+ .welcome{display:flex;flex:1;flex-direction:column;align-items:center;text-align:center;gap:0}
+ .welcome-copy{max-width:540px}
+ .welcome h1{font-size:clamp(2.4rem,6vw,3.25rem);margin-bottom:18px}
+ .welcome p{font-size:1.2rem;max-width:450px}
+ .welcome-visual{flex:1;width:100%;padding:24px 0 12px}
+ .welcome-art{width:min(100%,430px);max-height:min(44dvh,430px)}
+ #app:has(>.welcome-main)>.footer{border-top:0;padding:12px 32px calc(16px + env(safe-area-inset-bottom))}
+ .sheet-backdrop{align-items:center;padding:16px}
+ .edit-sheet{width:min(100%,600px);border-radius:24px}
+ .keyboard-open #app>.tabbar,.keyboard-open #app:has(>.quiz-content)>.footer{position:static;transform:none;width:100%;margin-top:auto}
+ .keyboard-open #app:has(>.tabbar)>main,.keyboard-open #app>.quiz-content:not(.welcome-main){padding-bottom:24px}
+}
+/* Wider portrait tablets: budget stays beside groceries, with no narrow text columns. */
+@media (min-width:820px) and (max-width:959px), (min-width:960px) and (max-width:1200px) and (orientation:portrait){
+ .shopping-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(236px,280px);grid-template-areas:"items summary" "items actions";grid-template-rows:max-content 1fr;gap:24px;align-items:start}
+ .shopping-summary{grid-area:summary;padding:20px}
+ .shopping-items{grid-area:items}
+ .shopping-actions{grid-area:actions}
+ .shopping-actions .store-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (min-width:600px) and (max-width:959px) and (max-height:500px){
+ #app:has(>.quiz-content)>.footer{position:static;transform:none;width:100%;margin-top:auto}
+ #app>.quiz-content:not(.welcome-main),#app>.welcome-main{padding-bottom:24px}
+ #app>.welcome-main{padding-top:24px}
+ .welcome-art{max-height:210px}
+}
+@media (min-width:960px) and (max-width:1366px) and (orientation:landscape) and (pointer:coarse){
+ #app>.tabbar{padding-top:28px}
+ .tabbar .tab{min-height:56px}
+ .meal-actions .secondary,.meal-actions .link{min-height:48px}
+ .grocery-check{min-height:52px}
+}
+
 </style></head><body><div id="app"></div><script>
 'use strict';
 const days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'], fullDays=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
