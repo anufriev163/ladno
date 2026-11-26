@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-11-26T15:23:06.222Z",
-  "runId": "45848479681",
-  "result": "passed",
+  "checkedAt": "2026-11-26T15:27:31.678Z",
+  "runId": "45849230191",
+  "result": "generation_http_error",
   "deployment": "deployed",
   "expectedVersion": "cloudflare-v7",
   "publicProvider": {
@@ -28,17 +28,12 @@
     "cors": true
   },
   "generation": {
-    "status": 200,
+    "status": 422,
     "cors": true,
-    "ms": 12897,
-    "code": null,
-    "reason": null,
+    "ms": 4499,
+    "code": "MODEL_PLAN",
+    "reason": "RECIPE_STEPS",
     "upstreamStatus": null,
-    "stage": null,
-    "model": "ds/deepseek-v4-flash",
-    "reasoning": "disabled",
-    "reasoningTokens": null,
-    "verifiedSteps": true,
-    "fixtureCost": 500
+    "stage": null
   }
 }
