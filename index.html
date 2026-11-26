@@ -622,8 +622,8 @@ const quizIndex=()=>quizSteps().indexOf(s.step)+1;
 const nextStep=()=>quizSteps()[quizIndex()]??quizSteps().at(-1);
 const previousStep=()=>quizSteps()[quizIndex()-2]??0;
 const weeklyKeys=['days','meals','budget','pantry','weekLikes','weekDislikes','weekCustomLikes','weekCustomDislikes'];
-function restoreWeekly(){if(s.weeklyBackup){for(const k of weeklyKeys)if(Object.hasOwn(s.weeklyBackup,k))s[k]=s.weeklyBackup[k];delete s.weeklyBackup}s.weeklySetup=false;s.preferenceDraft.weekLikes='';s.preferenceDraft.weekDislikes='';syncCustomProducts()}
-function startWeekly(){if(!s.profileComplete){s.view='quiz';s.weeklySetup=false;s.step=0;render();return}restoreWeekly();s.weeklyBackup=Object.fromEntries(weeklyKeys.map(k=>[k,JSON.parse(JSON.stringify(s[k]))]));s.weekLikes=[];s.weekDislikes=[];s.weekCustomLikes=[];s.weekCustomDislikes=[];s.pantry=[];s.preferenceDraft.weekLikes='';s.preferenceDraft.weekDislikes='';s.weeklySetup=true;s.weeklyReturn=s.view==='shopping'?'shopping':'plan';s.view='quiz';s.step=3;s.search='';generationError='';render();window.scrollTo(0,0)}
+function restoreWeekly(){weeklyResume={};if(s.weeklyBackup){for(const k of weeklyKeys)if(Object.hasOwn(s.weeklyBackup,k))s[k]=s.weeklyBackup[k];delete s.weeklyBackup}s.weeklySetup=false;s.preferenceDraft.weekLikes='';s.preferenceDraft.weekDislikes='';syncCustomProducts()}
+function startWeekly(){weeklyResume={};if(!s.profileComplete){s.view='quiz';s.weeklySetup=false;s.step=0;render();return}restoreWeekly();s.weeklyBackup=Object.fromEntries(weeklyKeys.map(k=>[k,JSON.parse(JSON.stringify(s[k]))]));s.weekLikes=[];s.weekDislikes=[];s.weekCustomLikes=[];s.weekCustomDislikes=[];s.pantry=[];s.preferenceDraft.weekLikes='';s.preferenceDraft.weekDislikes='';s.weeklySetup=true;s.weeklyReturn=s.view==='shopping'?'shopping':'plan';s.view='quiz';s.step=3;s.search='';generationError='';render();window.scrollTo(0,0)}
 function finishProfile(){s.profileComplete=true;s.weeklySetup=false;s.step=0;s.view=s.editingQuiz?'settings':'plan';s.editingQuiz=false;s.error='';generationError='';save();render();window.scrollTo(0,0)}
 function saveBioFields(){const p=s.nutritionProfile,read=(id,min,max)=>{const el=document.querySelector(id),v=el?.value.trim();if(!v)return null;const n=Number(v);if(!Number.isFinite(n)||n<min||n>max||(id==='#profile-age'&&!Number.isInteger(n)))throw Error('проверьте возраст, рост и вес');return n};try{const age=read('#profile-age',18,120);s.nutritionProfile={...p,age,height:read('#profile-height',100,250),weight:read('#profile-weight',30,350),activity:document.querySelector('#profile-activity')?.value||'не указано',body:document.querySelector('#profile-body')?.value||'не указано',share:false};return true}catch(e){inlineError('bio-error',e.message);return false}}
 function bioFields(){const p=s.nutritionProfile;const select=(id,vals,v)=>'<select class="extraField" id="'+id+'">'+vals.map(x=>'<option '+(v===x?'selected':'')+'>'+x+'</option>').join('')+'</select>';return '<div class="extra-form"><label>возраст, лет<input class="extraField" id="profile-age" type="number" inputmode="numeric" min="18" max="120" placeholder="например, 30" value="'+esc(p.age??'')+'"></label><label>рост, см<input class="extraField" id="profile-height" type="number" inputmode="numeric" min="100" max="250" placeholder="например, 170" value="'+esc(p.height??'')+'"></label><label>вес, кг<input class="extraField" id="profile-weight" type="number" inputmode="decimal" min="30" max="350" step="0.1" placeholder="например, 70" value="'+esc(p.weight??'')+'"></label><label>активность'+select('profile-activity',['не указано','малоподвижный','умеренно активный','активный','регулярные тренировки'],p.activity)+'</label><label>телосложение (по желанию)'+select('profile-body',['не указано','стройное','среднее','крупное'],p.body)+'</label><p class="inline-error" id="bio-error" role="alert" hidden></p></div><section id="nutrition-preview" class="nutrition-preview" aria-live="polite">'+estimateMarkup(p)+'</section>'}
@@ -902,8 +902,8 @@ recipes.splice(builtinCount);s.plan=applyWishes(best);delete s.weeklyBackup;s.ai
 const CLOUD_API='https://ladno.anufrievdenis1996-4f6.workers.dev';
 const RAILWAY_API='https://ladno-production.up.railway.app';
 const API_BASES=[CLOUD_API,...new Set([location.hostname.endsWith('.github.io')?RAILWAY_API:location.origin,RAILWAY_API])].filter((v,i,a)=>a.indexOf(v)===i);
-let aiBusy=false,aiError='',generationTab='',generationError='',generationToken=0,generationController=null,generationStartedAt=0,generationStatusTimer=null,generationProgress='';
-function cancelGeneration(){clearTimeout(generationStatusTimer);generationToken++;generationController?.abort();generationController=null;aiBusy=false;generationTab='';generationError='';generationProgress=''}
+let aiBusy=false,aiError='',generationTab='',generationError='',generationToken=0,generationController=null,generationStartedAt=0,generationStatusTimer=null,generationProgress='',weeklyResume={};
+function cancelGeneration(){weeklyResume={};clearTimeout(generationStatusTimer);generationToken++;generationController?.abort();generationController=null;aiBusy=false;generationTab='';generationError='';generationProgress=''}
 function requestId(){return 'menu_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2)+'_'+Math.random().toString(36).slice(2)}
 async function timedFetch(url,options,ms,outer){const controller=new AbortController();const abort=()=>controller.abort();if(outer?.aborted)abort();else outer?.addEventListener('abort',abort,{once:true});const timer=setTimeout(abort,ms);try{const res=await fetch(url,{...options,signal:controller.signal});let data=null;try{data=await res.json()}catch{}return {ok:res.ok,status:res.status,json:async()=>data}}finally{clearTimeout(timer);outer?.removeEventListener('abort',abort)}}
 const baseCount=builtinCount;
@@ -1015,12 +1015,23 @@ function combineWeeklyPart(accepted,raw,payload,base){
  if(checked.cost>base.profile.budget+.01)throw Error('Общая стоимость меню выше бюджета.');
  return combined;
 }
-async function generateWeeklyParts(capability,signal,transport=requestAI,onProgress=()=>{}){
+async function generateWeeklyParts(capability,signal,transport=requestAI,onProgress=()=>{},resume={}){
  const base=buildAIRequest('',100000,capability);
  const days=[...base.profile.days].sort((a,b)=>a-b);
  const groups=days.map(day=>[day]);
- let accepted={recipes:[],plan:[],note:''};
- for(let i=0;i<groups.length;i++){
+ // A checkpoint lives only in memory; no partial menu is published or persisted.
+ // Reuse only with exactly the same request profile, catalog, limits and backend.
+ const fingerprint=JSON.stringify([capability.base||'',base.profile,base.catalog]);
+ let accepted={recipes:[],plan:[],note:''},next=0;
+ if(resume.fingerprint===fingerprint&&Date.now()-resume.checkedAt<30*60*1000&&resume.accepted&&Number.isInteger(resume.next)&&resume.next>0&&resume.next<groups.length){
+  try{
+   const previousDays=days.slice(0,resume.next);
+   const verified=decodeAI(resume.accepted,base.catalog,previousDays,false);
+   if(verified.cost<=base.profile.budget+.01){accepted=resume.accepted;next=resume.next}
+  }catch{}
+ }
+ Object.assign(resume,{fingerprint,accepted,next,checkedAt:Date.now()});
+ for(let i=next;i<groups.length;i++){
   if(signal?.aborted)throw Error('Генерация отменена.');
   onProgress(i,groups.length,accepted.plan.length/base.profile.meals.length,days.length);
   const timeout=95000,payload=weeklyPartPayload(base,groups[i],accepted,timeout);
@@ -1028,9 +1039,12 @@ async function generateWeeklyParts(capability,signal,transport=requestAI,onProgr
   const raw=await transport(payload.correction,timeout,signal,capability,payload,true);
   if(signal?.aborted)throw Error('Генерация отменена.');
   accepted=combineWeeklyPart(accepted,raw,payload,base);
+  Object.assign(resume,{accepted,next:i+1,checkedAt:Date.now()});
   onProgress(i+1,groups.length,accepted.plan.length/base.profile.meals.length,days.length);
  }
- return decodeAI(accepted,base.catalog);
+ const result=decodeAI(accepted,base.catalog);
+ Object.assign(resume,{fingerprint:'',accepted:null,next:0,checkedAt:0});
+ return result;
 }
 async function generateAI(){
  if(aiBusy)return;
@@ -1042,7 +1056,7 @@ async function generateAI(){
  await refreshPublicPrices(controller.signal);if(token!==generationToken)return;
  const capability=await serverCapability(controller.signal);if(token!==generationToken)return;if(capability.mode==='local')throw Error('Не удалось подключиться к серверу ИИ. Запустите проверку соединения ниже.');if(s.budget===0&&!capability.zeroBudget)throw Error('Для нулевого бюджета требуется обновление сервера.');
  let result,retried=false;const compact=false,remaining=()=>Math.max(1000,205000-(Date.now()-startedAt));
- if(capability.mode==='generate'&&s.days.length>1){clearTimeout(generationStatusTimer);result=await generateWeeklyParts(capability,controller.signal,requestAI,(part,count,done,all)=>{if(token!==generationToken)return;const el=document.querySelector('#generation-status');generationProgress='Готово '+done+' из '+all+' дней. '+(part===count?'Проверяем общий бюджет и меню.':'Подбираем блюда на следующий день.');if(el)el.textContent=generationProgress;});retried=true;}else{
+ if(capability.mode==='generate'&&s.days.length>1){clearTimeout(generationStatusTimer);result=await generateWeeklyParts(capability,controller.signal,requestAI,(part,count,done,all)=>{if(token!==generationToken)return;const el=document.querySelector('#generation-status');generationProgress='Готово '+done+' из '+all+' дней. '+(part===count?'Проверяем общий бюджет и меню.':'Подбираем блюда на следующий день.');if(el)el.textContent=generationProgress;},weeklyResume);retried=true;}else{
  try{result=await requestAI('',Math.min(compact?27000:100000,remaining()),controller.signal,capability)}catch(e){
   if(token!==generationToken)return;if(compact||(e.status&&e.status!==422)||(!e.status&&!/Слишком|Мало разнообразных|порци|некоррект|неполный|запрещённый|Повтор|ограничени|Не найден|неправильный|формате JSON/i.test(e.message||''))||remaining()<15000)throw e;
   retried=true;result=await requestAI('Исправь меню: '+e.message+'. Соблюдай бюджет, проверь количества и разнообразие.',Math.min(100000,remaining()),controller.signal,capability)
@@ -1173,7 +1187,7 @@ function navigation(){
  return '<nav class="tabbar" aria-label="Основные разделы"><div class="desktop-brand" aria-hidden="true">налегке</div><div class="desktop-nav-label" aria-hidden="true">питание на неделю</div>'+[['shopping','Покупки'],['plan','Меню'],['settings','Настройки']].map(([v,l])=>'<button type="button" class="tab '+(active===v?'selected':'')+'" '+(active===v?'aria-current="page"':'')+' data-act="view" data-val="'+v+'" '+(aiBusy&&['extras','settings'].includes(v)?'disabled aria-disabled="true"':'')+'><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+tabIcons[v]+'</svg><span>'+l+'</span></button>').join('')+'</nav>'
 }
 function generationScreen(){app.innerHTML=head(false)+'<main class="tab-content loading"><div class="loading-inner"><div class="spinner" aria-hidden="true"></div><h1>составляем меню</h1><p class="loading-budget">'+money(s.budget)+' · '+s.days.length+' дн.</p><p id="generation-status" role="status" aria-live="polite">'+(generationProgress?esc(generationProgress):Date.now()-generationStartedAt>10000?'подбор ещё продолжается. можно отменить и вернуться к меню.':'подбираем блюда по вашим ответам. это может занять некоторое время.')+'</p><button class="link" data-act="cancel-generation">отменить</button></div></main>'+navigation()}
-function generationFailure(){const budget=/бюджет|уложиться/i.test(generationError),technical=/AnyModel|Cloudflare|API|HTTP|сервер|JSON|соединени|сетевая|ключ|502|400|422|503|формат ответа/i.test(generationError),message=technical?'Сейчас не удалось получить меню от ИИ. Попробуйте ещё раз.':generationError;app.innerHTML=head(false)+'<main class="tab-content narrow-page error-page"><h1>'+(s.view==='plan'?'меню на неделю':'список покупок')+'</h1><div class="notice" role="alert"><h2>не удалось составить меню</h2><p>'+esc(message)+'</p><small>бюджет '+money(s.budget)+'</small></div><div class="action-stack">'+(budget?'<button class="primary" data-act="budget-edit">изменить бюджет</button><button class="secondary" data-act="ai-generate">попробовать снова</button>':'<button class="primary" data-act="ai-generate">попробовать снова</button>')+'<button class="secondary" data-act="view" data-val="quiz">изменить профиль</button>'+(s.plan.length&&(s.weeklyBackup||!auditPlan(s.plan)&&total()<=s.budget)?'<button class="secondary" data-act="old-menu">вернуться к меню</button>':'')+'</div>'+(technical?'<details class="info-details error-details"><summary>подробнее об ошибке</summary><p>'+esc(generationError)+'</p><a class="secondary" href="api-check.html">проверить работу ИИ</a></details>':'')+'</main>'+navigation()}
+function generationFailure(){const completed=weeklyResume.next>0&&weeklyResume.next<s.days.length&&Date.now()-weeklyResume.checkedAt<30*60*1000?weeklyResume.next:0,retryLabel=completed?'продолжить подбор':'попробовать снова';const budget=/бюджет|уложиться/i.test(generationError),technical=/AnyModel|Cloudflare|API|HTTP|сервер|JSON|соединени|сетевая|ключ|502|400|422|503|формат ответа/i.test(generationError),message=technical?'Сейчас не удалось получить меню от ИИ. Попробуйте ещё раз.':generationError;app.innerHTML=head(false)+'<main class="tab-content narrow-page error-page"><h1>'+(s.view==='plan'?'меню на неделю':'список покупок')+'</h1><div class="notice" role="alert"><h2>не удалось составить меню</h2><p>'+esc(message)+'</p>'+(completed?'<p class="small-note">проверено '+completed+' из '+s.days.length+' дней. если параметры и цены не изменились, продолжим с оставшихся дней.</p>':'')+'<small>бюджет '+money(s.budget)+'</small></div><div class="action-stack">'+(budget?'<button class="primary" data-act="budget-edit">изменить бюджет</button><button class="secondary" data-act="ai-generate">попробовать снова</button>':'<button class="primary" data-act="ai-generate">'+retryLabel+'</button>')+'<button class="secondary" data-act="view" data-val="quiz">изменить профиль</button>'+(s.plan.length&&(s.weeklyBackup||!auditPlan(s.plan)&&total()<=s.budget)?'<button class="secondary" data-act="old-menu">вернуться к меню</button>':'')+'</div>'+(technical?'<details class="info-details error-details"><summary>подробнее об ошибке</summary><p>'+esc(generationError)+'</p><a class="secondary" href="api-check.html">проверить работу ИИ</a></details>':'')+'</main>'+navigation()}
 function reviewView(t){app.innerHTML=head(false)+'<main class="tab-content narrow-page"><h1>'+t+'</h1><div class="empty-state"><p>Обновите меню, чтобы пересчитать количество продуктов.</p><button class="primary" data-act="ai-generate">Составить заново</button></div></main>'+navigation()}
 function emptyView(t,d){app.innerHTML=head(false)+'<main class="tab-content narrow-page empty-page"><h1>'+t+'</h1><section class="empty-state"><svg class="empty-icon" viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+tabIcons[s.view==='shopping'?'shopping':'plan']+'</svg><h2>составьте меню на неделю</h2><p>'+(s.view==='shopping'?'список покупок появится автоматически.':'выберите дни, пожелания и бюджет.')+'</p><button class="primary" data-act="weekly-start">Составить меню</button></section></main>'+navigation()}
 function plan(){
