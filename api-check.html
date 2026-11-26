@@ -1,0 +1,42 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>проверка ИИ · налегке</title><style>
+*{box-sizing:border-box}body{margin:0;font:17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#151515;background:#fff}main{max-width:520px;margin:0 auto;padding:32px 24px 48px}a{color:inherit}h1{font-size:30px;line-height:1.15;letter-spacing:-.04em;margin:28px 0 14px}h2{font-size:18px;margin:24px 0 12px}p{color:#5f5f67;margin:0 0 20px}button{font:inherit;font-weight:650;min-height:52px;width:100%;border-radius:14px;border:1px solid #151515;padding:12px;margin:8px 0;cursor:pointer;background:#151515;color:#fff}button.secondary{background:#fff;color:#151515}button:disabled{opacity:.55;cursor:default}pre{font:14px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #dedee3;padding:14px;border-radius:14px;margin:0 0 14px}small{display:block;font-size:14px;color:#5f5f67}
+</style></head><body><main><a href="./">← назад в приложение</a><h1>проверка работы ИИ</h1><p>Проверяем соединение с Cloudflare. Тестовый запрос не использует данные вашей анкеты и не изменяет меню.</p><pre id="report" role="status" aria-live="polite">проверяем соединение…</pre><button id="run" disabled>проверить генерацию</button><small>Один тестовый запрос к AnyModel. Может использовать небольшую часть баланса API.</small><button id="copy" class="secondary">скопировать результат</button></main><script>
+const API='https://ladno.anufrievdenis1996-4f6.workers.dev';
+const el=document.getElementById('report'),button=document.getElementById('run'),copy=document.getElementById('copy');
+let lines=[],ready=false,version=null;
+function log(s){lines.push(s);el.textContent=lines.join('\n')}
+async function get(path,opts={},ms=12000){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),ms);
+ try{const response=await fetch(API+path,{cache:'no-store',credentials:'omit',redirect:'error',...opts,signal:controller.signal});let data=null;try{data=await response.json()}catch{}return {status:response.status,ok:response.ok,data}}finally{clearTimeout(timer)}
+}
+async function connection(){
+ try{const r=await get('/version');log('Соединение: HTTP '+r.status);version=r.data;ready=r.ok&&version?.ready===true&&version.capabilities?.includes('generate-recipes')&&Array.isArray(version.foodIds);
+ if(!ready){log('Сервер не готов к генерации.');return}
+ log('Версия: '+String(version.version||'не указана').slice(0,100));log('API: '+version.api);log('Генерация: доступна по заявлению сервера');if(!version.capabilities.includes('diagnostics'))log('Внимание: сервер ещё не обновлён до версии с подробными ошибками.');button.disabled=false;
+ }catch(e){log('Не удалось получить /version. Возможная причина: сеть, DNS или CORS. '+(e.name==='AbortError'?'Истекло время ожидания.':''))}
+}
+function fixture(){
+ const catalog={rice:{name:'Рис',price:150,package:800,unit:'г'},chicken:{name:'Куриное филе',price:450,package:500,unit:'г'},carrot:{name:'Морковь',price:80,package:1000,unit:'г'},oil:{name:'Растительное масло',price:150,package:500,unit:'мл'}};
+ const limits={rice:120,chicken:250,carrot:180,oil:20};
+ return {mode:'generate',catalog,profile:{personal:null,store:'Пятёрочка',stores:['Пятёрочка'],goal:'Обычное питание',likes:[],customDislikes:[],adults:1,children:0,servings:1,days:[0],meals:['Обед'],equipment:['Плита'],diet:'Без ограничений',style:'Разнообразие',allergies:[],dislikes:[],dislikeNames:[],pantry:[],budget:1500,weeklyExtras:[],weeklyExtrasKnownCost:0,weeklyExtrasUnknownPrices:0,wishes:[],quantityLimits:limits,dailyQuantityLimits:limits,servingQuantityLimits:limits},correction:'',timeoutMs:65000,requestId:'check_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2)};
+}
+function verify(raw,req){
+ if(!Array.isArray(raw?.recipes)||!raw.recipes.length||raw.plan?.length!==1)return null;
+ const slot=raw.plan[0],recipe=raw.recipes[slot?.id];if(!slot||slot.day!==0||slot.meal!=='Обед'||!Number.isInteger(slot.id)||!recipe||recipe.type!=='Обед'||typeof recipe.name!=='string'||typeof recipe.method!=='string'||!recipe.ingredients||!Array.isArray(recipe.equipment)||!recipe.equipment.every(x=>req.profile.equipment.includes(x)))return null;
+ let price=0;const entries=Object.entries(recipe.ingredients);if(!entries.length)return null;
+ for(const [id,n] of entries){const f=req.catalog[id];if(!Object.hasOwn(req.catalog,id)||!Number.isInteger(n)||n<=0||n>req.profile.servingQuantityLimits[id])return null;price+=Math.ceil(n/f.package)*f.package*f.price/1000}
+ return price<=req.profile.budget?{name:recipe.name,ingredients:entries.length,price}:null
+}
+button.addEventListener('click',async()=>{
+ if(!ready||button.disabled)return;
+ button.disabled=true;button.textContent='выполняем тест…';log('');log('Запрос на один обед, бюджет 1500 ₽.');const start=performance.now(),req=fixture();
+ try{const r=await get('/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(req)},75000);log('Генерация: HTTP '+r.status+' · '+((performance.now()-start)/1000).toFixed(1)+' сек.');
+ if(!r.ok){const code=r.data?.code;if(typeof code==='string'&&/^[A-Z0-9_]{1,50}$/.test(code))log('Код ошибки: '+code);if(Number.isInteger(r.data?.upstreamStatus))log('AnyModel: HTTP '+r.data.upstreamStatus);log('Тест не пройден.');return}
+ let raw;try{raw=JSON.parse(r.data.content)}catch{log('Ответ не содержит корректный JSON.');return}
+ const result=verify(raw,req);if(!result){log('Рецепт не прошёл проверку структуры или бюджета.');return}log('Тест пройден: получен рецепт от ИИ.');log('Блюдо: '+result.name.slice(0,100));log('Ингредиентов: '+result.ingredients);log('Стоимость по тестовым ценам: '+result.price.toFixed(2)+' ₽');
+ }catch(e){log('Запрос не выполнен: '+(e.name==='AbortError'?'истекло время ожидания':'сетевая ошибка или CORS'))}
+ finally{button.disabled=false;button.textContent='повторить проверку'}
+});
+copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(el.textContent);copy.textContent='скопировано'}catch{const sel=window.getSelection();const range=document.createRange();range.selectNodeContents(el);sel.removeAllRanges();sel.addRange(range);copy.textContent='выделено для копирования'}});
+connection();
+</script></body></html>
