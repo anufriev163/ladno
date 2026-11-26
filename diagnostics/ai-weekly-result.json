@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-11-26T10:08:00.861Z",
+  "runId": "45798430197",
+  "commit": "536c36f835328630144f1ec554ae79f9f153f91d",
+  "fixture": {
+    "adults": 1,
+    "days": 7,
+    "mealsPerDay": 3,
+    "budget": 6000
+  },
+  "result": "generation_http_error",
+  "version": {
+    "status": 200,
+    "ready": true,
+    "version": "cloudflare-v6"
+  },
+  "request": {
+    "valid": true,
+    "catalogSize": 63,
+    "slots": 21,
+    "personalDataIncluded": false
+  },
+  "generation": {
+    "status": 502,
+    "cors": true,
+    "ms": 97888,
+    "code": "TIMEOUT"
+  }
+}
