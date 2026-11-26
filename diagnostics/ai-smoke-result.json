@@ -1,23 +1,38 @@
 {
-  "checkedAt": "2026-11-26T07:08:45.809Z",
-  "runId": "45773139227",
-  "result": "generation_http_error",
+  "checkedAt": "2026-11-26T09:53:24.184Z",
+  "runId": "45796146279",
+  "result": "passed",
+  "deployment": "missing_credentials",
+  "publicProvider": {
+    "status": 401,
+    "ready": false,
+    "api": null,
+    "generation": false
+  },
+  "reserve": {
+    "status": 404,
+    "ready": false,
+    "api": null,
+    "generation": false
+  },
   "version": {
     "status": 200,
     "cors": true,
     "ready": true,
     "api": 3,
-    "version": "cloudflare-v4"
+    "version": "cloudflare-v6"
   },
   "preflight": {
     "status": 204,
     "cors": true
   },
   "generation": {
-    "status": 502,
+    "status": 200,
     "cors": true,
-    "ms": 578,
-    "code": "PROVIDER_NETWORK",
-    "upstreamStatus": null
+    "ms": 19600,
+    "code": null,
+    "upstreamStatus": null,
+    "stage": null,
+    "fixtureCost": 500
   }
 }
