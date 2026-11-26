@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-11-26T10:13:55.962Z",
-  "runId": "45799360285",
-  "commit": "41c7f4863126d566d60f09071f1d319ebad3ce5e",
+  "checkedAt": "2026-11-26T10:19:47.631Z",
+  "runId": "45800282269",
+  "commit": "187922d5d5dd33c7adb560b0a139ed63d5f93ebe",
   "fixture": {
     "adults": 1,
     "days": 7,
@@ -23,15 +23,16 @@
   "parts": [
     {
       "days": [
-        0,
-        1
+        0
       ],
+      "catalogSize": 42,
+      "requestBytes": 6208,
       "status": 502,
       "cors": true,
-      "ms": 77963,
+      "ms": 92783,
       "code": "TIMEOUT"
     }
   ],
-  "durationMs": 77966,
+  "durationMs": 92790,
   "error": "TIMEOUT"
 }
