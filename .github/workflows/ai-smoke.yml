@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.github/workflows/ai-smoke.yml']
+    paths: ['.github/workflows/ai-smoke.yml', 'worker.mjs', 'wrangler.toml']
 permissions:
   contents: write
 concurrency:

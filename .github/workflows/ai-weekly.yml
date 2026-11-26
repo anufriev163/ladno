@@ -61,7 +61,11 @@ jobs:
               const response=await fetch(base+'/api/menu',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(part),redirect:'error',signal:AbortSignal.timeout(timeout+5000)});
               let data=null;try{data=await response.json()}catch{}
               Object.assign(entry,{status:response.status,cors:response.headers.get('access-control-allow-origin')===origin,ms:Date.now()-at,code:safeCode(data?.code),reason:safeCode(data?.reason)});
-              if(!response.ok||!entry.cors)throw Object.assign(Error(entry.code||'PART_HTTP_ERROR'),{status:response.status,reason:entry.reason});
+              if(!response.ok||!entry.cors){
+                entry.ingredient=typeof data?.ingredient==='string'&&/^[a-z][a-z0-9_]{0,30}$/.test(data.ingredient)?data.ingredient:null;
+                entry.max=Number.isSafeInteger(data?.max)?data.max:null;
+                throw Object.assign(Error(entry.code||'PART_HTTP_ERROR'),{status:response.status,reason:entry.reason,ingredient:entry.ingredient,max:entry.max});
+              }
               const generation=data?.generation;
               entry.reasoningDisabled=generation?.model==='ds/deepseek-v4-flash'&&generation.reasoning==='disabled'&&!(generation.reasoningTokens>0);
               if(!entry.reasoningDisabled)throw Error('MODEL_MODE_UNVERIFIED');

@@ -20,15 +20,16 @@ test('allergy profile only receives instructions built from checked ingredients'
  modelRecipe={...recipe,ingredients:{rice:80,milk:50},steps:[{action:'boil',ids:['rice','milk']}]};
  response=await fetchMenu();
  assert.equal(response.status,422);
- assert.equal((await response.json()).reason,'INGREDIENT_QUANTITY');
+ assert.equal((await response.json()).reason,'INGREDIENT_UNAVAILABLE');
 
- modelRecipe={...recipe,steps:[{action:'boil',ids:['rice','water']}]};
+ modelRecipe={...recipe,ingredients:{rice:160},steps:[{action:'boil',ids:['rice','water']}]};
  response=await fetchMenu();
  assert.equal(response.status,200);
  const plan=JSON.parse((await response.json()).content);
  assert.deepEqual(plan.plan,[{day:1,meal:'Обед',id:0}]);
  assert.equal(plan.recipes[0].verifiedSteps,true);
  assert.equal(plan.recipes[0].name,'Рис');
+ assert.equal(plan.recipes[0].ingredients.rice,120);
  assert.equal(plan.recipes[0].method,'Отварите до полной готовности: рис, вода.');
  assert.equal(plan.note,'');
 });
