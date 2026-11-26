@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-11-26T10:49:30.483Z",
-  "runId": "45804878933",
-  "commit": "7d0236aa240935062d1effdc27ace3f2b873e8f5",
+  "checkedAt": "2026-11-26T10:50:18.614Z",
+  "runId": "45805002127",
+  "commit": "12d0404dff265308aab8f78d4473284ebd0c7355",
   "fixture": {
     "adults": 1,
     "days": 7,
@@ -15,12 +15,141 @@
       "mushroom"
     ]
   },
-  "result": "deployment_required",
+  "result": "passed",
   "version": {
     "status": 200,
     "ready": true,
     "version": "cloudflare-v7"
   },
   "expectedVersion": "cloudflare-v7",
-  "error": "DEPLOYMENT_REQUIRED"
+  "request": {
+    "valid": true,
+    "catalogSize": 27,
+    "slots": 21,
+    "personalDataIncluded": false
+  },
+  "parts": [
+    {
+      "days": [
+        0
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4331,
+      "status": 200,
+      "cors": true,
+      "ms": 10324,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        1
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4435,
+      "status": 200,
+      "cors": true,
+      "ms": 7892,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        2
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4448,
+      "status": 200,
+      "cors": true,
+      "ms": 10038,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        3
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4458,
+      "status": 200,
+      "cors": true,
+      "ms": 9284,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        4
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4450,
+      "status": 200,
+      "cors": true,
+      "ms": 6735,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        5
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4462,
+      "status": 200,
+      "cors": true,
+      "ms": 7962,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        5
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4619,
+      "status": 200,
+      "cors": true,
+      "ms": 9068,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    },
+    {
+      "days": [
+        6
+      ],
+      "catalogSize": 27,
+      "requestBytes": 4475,
+      "status": 200,
+      "cors": true,
+      "ms": 11543,
+      "code": null,
+      "reason": null,
+      "reasoningDisabled": true,
+      "serverValidation": true
+    }
+  ],
+  "client": {
+    "slots": 21,
+    "uniqueRecipes": 21,
+    "cost": 2963.59,
+    "missingPrices": 0,
+    "items": 17,
+    "planValid": true,
+    "restrictionsVerified": true
+  },
+  "durationMs": 72862
 }
