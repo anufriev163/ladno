@@ -923,13 +923,13 @@ function cleanAIRecipe(raw){
  if(!allowed(rr))throw Error('ИИ предложил блюдо с запрещённым ингредиентом.');
  return rr;
 }
-function decodeAI(raw,catalog=null){
- if(!raw||!Array.isArray(raw.recipes)||!Array.isArray(raw.plan)||raw.recipes.length<1||raw.recipes.length>28||raw.plan.length!==slots())throw Error('ИИ вернул неполный план.');
+function decodeAI(raw,catalog=null,days=s.days,full=true){
+ if(!raw||!Array.isArray(raw.recipes)||!Array.isArray(raw.plan)||raw.recipes.length<1||raw.recipes.length>28||raw.plan.length!==days.length*s.meals.length)throw Error('ИИ вернул неполный план.');
  const fresh=raw.recipes.map(cleanAIRecipe);if(catalog&&fresh.some(r=>Object.keys(r.ingredients).some(k=>!Object.hasOwn(catalog,k))))throw Error('ИИ вернул ингредиент вне переданного каталога.');
  const seen=new Set();
- const plan=raw.plan.map(p=>{if(!p||!s.days.includes(p.day)||!s.meals.includes(p.meal)||!Number.isInteger(p.id)||!fresh[p.id]||fresh[p.id].type!==p.meal)throw Error('ИИ вернул неправильный день или приём пищи.');const slot=p.day+'|'+p.meal;if(seen.has(slot))throw Error('Повтор приёма пищи.');seen.add(slot);return {day:p.day,meal:p.meal,id:p.id+baseCount}});
+ const plan=raw.plan.map(p=>{if(!p||!days.includes(p.day)||!s.meals.includes(p.meal)||!Number.isInteger(p.id)||!fresh[p.id]||fresh[p.id].type!==p.meal)throw Error('ИИ вернул неправильный день или приём пищи.');const slot=p.day+'|'+p.meal;if(seen.has(slot))throw Error('Повтор приёма пищи.');seen.add(slot);return {day:p.day,meal:p.meal,id:p.id+baseCount}});
  const old=recipes.splice(baseCount);recipes.push(...fresh);let cost;
- try{const issue=auditPlan(plan);if(issue)throw Error(issue);cost=total(plan)}finally{recipes.splice(baseCount);recipes.push(...old)}
+ try{const issue=auditPlan(plan,recipes,full);if(issue)throw Error(issue);cost=total(plan)}finally{recipes.splice(baseCount);recipes.push(...old)}
  return {fresh,plan,cost,note:typeof raw.note==='string'?raw.note.slice(0,700):''};
 }
 async function refreshPublicPrices(signal){
@@ -964,15 +964,61 @@ function buildAIRequest(correction='',timeout=100000,capability={mode:'legacy',f
  if(candidates&&s.meals.some(m=>!candidates.some(r=>r.type===m)))throw Error('Нет подходящих рецептов для всех приёмов пищи.');
  return {profile,catalog,correction,requestId:requestId(),timeoutMs:Math.max(1000,Math.min(100000,timeout-2500)),...(capability.mode==='generate'?{mode:'generate'}:{})};
 }
-async function requestAI(correction='',timeout=100000,signal,capability){
- const payload=buildAIRequest(correction,timeout,capability);if(!Object.keys(payload.catalog).length)throw Error('Нет продуктов, подходящих под ваши ограничения. Проверьте профиль.');let resp;
+async function requestAI(correction='',timeout=100000,signal,capability,prepared=null,rawOnly=false){
+ const payload=prepared||buildAIRequest(correction,timeout,capability);if(!Object.keys(payload.catalog).length)throw Error('Нет продуктов, подходящих под ваши ограничения. Проверьте профиль.');let resp;
  try{resp=await timedFetch(capability.base+'/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'},Math.max(1000,timeout),signal)}
  catch(e){throw Error('Нет ответа от сервера ИИ. Проверьте интернет и попробуйте снова.')}
  if(!resp.ok){const err=await resp.json();const messages={NOT_CONFIGURED:'Сервер ИИ не настроен (ключ или хранилище лимитов).',QUOTA_UNAVAILABLE:'Сервер не смог проверить лимит запросов (Cloudflare).',PROVIDER_AUTH:'AnyModel отклонил ключ API.',PROVIDER_BALANCE:'Недостаточно средств на балансе AnyModel.',PROVIDER_LIMIT:'AnyModel ограничил число запросов. Попробуйте позже.',MODEL_UNAVAILABLE:'Модель ИИ временно недоступна.',PROVIDER_HTTP:'AnyModel вернул ошибку '+(err?.upstreamStatus||''),TIMEOUT:'ИИ не успел ответить. Попробуйте ещё раз.',PROVIDER_NETWORK:'Cloudflare не смог связаться с AnyModel.',MODEL_EMPTY:'Некорректный пустой ответ ИИ.',MODEL_JSON:'Некорректный формат ответа ИИ.',MODEL_PLAN:'Некорректный план ИИ: не прошла проверка бюджета или граммовок.',DAILY_LIMIT:'Достигнут лимит запросов к ИИ. Попробуйте позже.'};const error=new Error(messages[err?.code]||(resp.status===400?'Сервер не принял параметры меню (400).':resp.status===422?'Некорректный ответ ИИ: не прошла проверка меню.':resp.status===429?'Лимит запросов к ИИ достигнут.':'Ошибка сервера ИИ ('+resp.status+').'));error.code=err?.code||('HTTP_'+resp.status);error.status=resp.status;throw error}
  const data=await resp.json();const answer=data?.content;
  if(typeof answer!=='string')throw Error('Не удалось составить меню.');
  let raw;try{raw=JSON.parse(answer.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}catch{throw Error('ИИ вернул ответ не в формате JSON.')}
- return payload.mode==='select'?decodeSelection(raw,payload.candidates):decodeAI(raw,payload.catalog);
+ if(rawOnly)return raw;return payload.mode==='select'?decodeSelection(raw,payload.candidates):decodeAI(raw,payload.catalog);
+}
+// Every chunk is generated by the live AI; no local recipe fallback.
+function weeklyPartPayload(base,days,accepted,timeout){
+ const used=Object.create(null);
+ for(const item of accepted.plan)for(const [id,n] of Object.entries(accepted.recipes[item.id].ingredients))used[id]=(used[id]||0)+n;
+ const catalog={},quantityLimits={},dailyQuantityLimits={},servingQuantityLimits={};
+ const p=base.profile;
+ for(const [id,row] of Object.entries(base.catalog)){
+  const remaining=(p.quantityLimits[id]||0)-(used[id]||0);
+  const limit=customId(id)?Math.max(servingGuard[id],Math.ceil(weeklyGuard[id]*days.length/7)):remaining;
+  const n=Math.min(remaining,limit);
+  if(n<1)continue;
+  catalog[id]=row;quantityLimits[id]=n;
+  dailyQuantityLimits[id]=Math.min(n,p.dailyQuantityLimits[id]);
+  servingQuantityLimits[id]=Math.min(n,p.servingQuantityLimits[id]);
+ }
+ const previousCost=accepted.plan.length?decodeAI(accepted,base.catalog,[...new Set(accepted.plan.map(x=>x.day))],false).cost:0;
+ const target=Math.max(0,Math.floor((p.budget-previousCost)*days.length/Math.max(days.length,p.days.length-new Set(accepted.plan.map(x=>x.day)).size)));
+ const correction='Часть недельного меню. Дни: '+days.join(', ')+'. Общий бюджет '+p.budget+' ₽, предыдущие дни: '+Math.round(previousCost)+' ₽. Ориентир дополнительных покупок '+target+' ₽. Повторно используй продукты разумно, избегай одинаковых блюд. Верни только выбранные дни.';
+ return {...base,catalog,correction,requestId:requestId(),timeoutMs:Math.max(1000,Math.min(100000,timeout-2500)),profile:{...p,days,quantityLimits,dailyQuantityLimits,servingQuantityLimits,pantry:p.pantry.filter(id=>Object.hasOwn(catalog,id)),dislikes:p.dislikes.filter(id=>Object.hasOwn(catalog,id))}};
+}
+function combineWeeklyPart(accepted,raw,payload,base){
+ decodeAI(raw,payload.catalog,payload.profile.days,false);
+ const offset=accepted.recipes.length;
+ const combined={recipes:[...accepted.recipes,...raw.recipes],plan:[...accepted.plan,...raw.plan.map(x=>({...x,id:x.id+offset}))],note:[accepted.note,typeof raw.note==='string'?raw.note:''].filter(Boolean).join(' ').slice(0,700)};
+ const days=[...new Set(combined.plan.map(x=>x.day))];
+ const checked=decodeAI(combined,base.catalog,days,days.length===base.profile.days.length);
+ if(checked.cost>base.profile.budget+.01)throw Error('Общая стоимость меню выше бюджета.');
+ return combined;
+}
+async function generateWeeklyParts(capability,signal,transport=requestAI,onProgress=()=>{}){
+ const base=buildAIRequest('',100000,capability);
+ const days=[...base.profile.days].sort((a,b)=>a-b);
+ const groups=[];for(let i=0;i<days.length;i+=2)groups.push(days.slice(i,i+2));
+ let accepted={recipes:[],plan:[],note:''};
+ for(let i=0;i<groups.length;i++){
+  if(signal?.aborted)throw Error('Генерация отменена.');
+  onProgress(i,groups.length,accepted.plan.length/base.profile.meals.length,days.length);
+  const timeout=80000,payload=weeklyPartPayload(base,groups[i],accepted,timeout);
+  if(!Object.keys(payload.catalog).length)throw Error('Не осталось подходящих продуктов в пределах недельных ограничений.');
+  const raw=await transport(payload.correction,timeout,signal,capability,payload,true);
+  if(signal?.aborted)throw Error('Генерация отменена.');
+  accepted=combineWeeklyPart(accepted,raw,payload,base);
+  onProgress(i+1,groups.length,accepted.plan.length/base.profile.meals.length,days.length);
+ }
+ return decodeAI(accepted,base.catalog);
 }
 async function generateAI(){
  if(aiBusy)return;
@@ -984,11 +1030,13 @@ async function generateAI(){
  await refreshPublicPrices(controller.signal);if(token!==generationToken)return;
  const capability=await serverCapability(controller.signal);if(token!==generationToken)return;if(capability.mode==='local')throw Error('Не удалось подключиться к серверу ИИ. Запустите проверку соединения ниже.');if(s.budget===0&&!capability.zeroBudget)throw Error('Для нулевого бюджета требуется обновление сервера.');
  let result,retried=false;const compact=false,remaining=()=>Math.max(1000,205000-(Date.now()-startedAt));
+ if(capability.mode==='generate'&&s.days.length>2){clearTimeout(generationStatusTimer);result=await generateWeeklyParts(capability,controller.signal,requestAI,(part,count,done,all)=>{if(token!==generationToken)return;const el=document.querySelector('#generation-status');if(el)el.textContent='Готово '+done+' из '+all+' дней. '+(part===count?'Проверяем общий бюджет и меню.':'Подбираем следующую часть меню.');});retried=true;}else{
  try{result=await requestAI('',Math.min(compact?27000:100000,remaining()),controller.signal,capability)}catch(e){
   if(token!==generationToken)return;if(compact||(e.status&&e.status!==422)||(!e.status&&!/Слишком|Мало разнообразных|порци|некоррект|неполный|запрещённый|Повтор|ограничени|Не найден|неправильный|формате JSON/i.test(e.message||''))||remaining()<15000)throw e;
   retried=true;result=await requestAI('Исправь меню: '+e.message+'. Соблюдай бюджет, проверь количества и разнообразие.',Math.min(100000,remaining()),controller.signal,capability)
  }
  if(token!==generationToken)return;if(!compact&&!retried&&result.cost>s.budget&&remaining()>=10000){try{const retry=await requestAI('Собери более экономный вариант строго в пределах '+s.budget+' ₽. Используй доступные ингредиенты, не уменьшай полноценные порции.',Math.min(100000,remaining()),controller.signal,capability);if(retry.cost<result.cost)result=retry}catch{}}
+ }
  if(token!==generationToken)return;if(result.cost>s.budget)throw Error('Меню выше бюджета');
  recipes.splice(baseCount);recipes.push(...result.fresh);s.aiRecipes=result.fresh;s.plan=result.plan;delete s.weeklyBackup;s.customProductsSupported=!!capability.customProducts;s.aiRecipes=recipes.slice(builtinCount);s.editingQuiz=false;s.source='ai';s.aiNote=result.note;s.checked=[];s.error='';
  }catch(e){
