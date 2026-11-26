@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-11-26T15:29:42.416Z",
-  "runId": "45849586123",
+  "checkedAt": "2026-11-26T15:33:19.347Z",
+  "runId": "45850188442",
   "result": "passed",
   "deployment": "deployed",
   "expectedVersion": "cloudflare-v7",
@@ -30,7 +30,7 @@
   "generation": {
     "status": 200,
     "cors": true,
-    "ms": 4790,
+    "ms": 6323,
     "code": null,
     "reason": null,
     "upstreamStatus": null,
