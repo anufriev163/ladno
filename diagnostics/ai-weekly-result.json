@@ -1,14 +1,14 @@
 {
-  "checkedAt": "2026-11-26T10:08:00.861Z",
-  "runId": "45798430197",
-  "commit": "536c36f835328630144f1ec554ae79f9f153f91d",
+  "checkedAt": "2026-11-26T10:13:55.962Z",
+  "runId": "45799360285",
+  "commit": "41c7f4863126d566d60f09071f1d319ebad3ce5e",
   "fixture": {
     "adults": 1,
     "days": 7,
     "mealsPerDay": 3,
     "budget": 6000
   },
-  "result": "generation_http_error",
+  "result": "acceptance_error",
   "version": {
     "status": 200,
     "ready": true,
@@ -20,10 +20,18 @@
     "slots": 21,
     "personalDataIncluded": false
   },
-  "generation": {
-    "status": 502,
-    "cors": true,
-    "ms": 97888,
-    "code": "TIMEOUT"
-  }
+  "parts": [
+    {
+      "days": [
+        0,
+        1
+      ],
+      "status": 502,
+      "cors": true,
+      "ms": 77963,
+      "code": "TIMEOUT"
+    }
+  ],
+  "durationMs": 77966,
+  "error": "TIMEOUT"
 }
