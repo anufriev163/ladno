@@ -1,6 +1,6 @@
 {
-  "source": "5ka.ru public catalog; regional availability and checkout prices not verified",
-  "observed": "2026-11-25",
+  "source": "5ka.ru public catalog; observed regular/reference price, not verified regional availability or checkout price",
+  "observed": "2026-11-26",
   "rows": {
     "oats": {
       "price": 54.99,
@@ -311,7 +311,482 @@
       "observed": "2026-11-25",
       "origin": "public_catalog_search",
       "policy": "regular_price"
+    },
+    "user_017c197v": {
+      "ingredient": "Авокадо",
+      "category": "Овощи и фрукты",
+      "price": 482.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Авокадо",
+      "url": "https://5ka.ru/catalog/avokado--251C51910/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 120,
+        "daily": 180,
+        "weekly": 700
+      },
+      "heat": false
+    },
+    "user_01b55e0v": {
+      "ingredient": "Груша",
+      "category": "Овощи и фрукты",
+      "price": 214.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Груши Китайские",
+      "url": "https://5ka.ru/catalog/frukty--251C70923/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": false
+    },
+    "user_00jmqo6l": {
+      "ingredient": "Киви",
+      "category": "Овощи и фрукты",
+      "price": 248.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Киви",
+      "url": "https://5ka.ru/catalog/frukty--251C70923/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 180,
+        "daily": 250,
+        "weekly": 1000
+      },
+      "heat": false
+    },
+    "user_018wf04f": {
+      "ingredient": "Гранат",
+      "category": "Овощи и фрукты",
+      "price": 269.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Гранат",
+      "url": "https://5ka.ru/catalog/frukty--251C70923/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 150,
+        "daily": 200,
+        "weekly": 800
+      },
+      "heat": false
+    },
+    "user_01ca56fr": {
+      "ingredient": "Лимон",
+      "category": "Овощи и фрукты",
+      "price": 224.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Лимоны",
+      "url": "https://5ka.ru/catalog/frukty--251C70923/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 30,
+        "daily": 60,
+        "weekly": 250
+      },
+      "heat": false
+    },
+    "user_01b0fnlb": {
+      "ingredient": "Мандарин",
+      "category": "Овощи и фрукты",
+      "price": 249.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Мандарины с листочками",
+      "url": "https://5ka.ru/catalog/frukty--251C70923/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": false
+    },
+    "user_000vcnlb": {
+      "ingredient": "Хурма",
+      "category": "Овощи и фрукты",
+      "price": 194.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Хурма Плоская",
+      "url": "https://5ka.ru/catalog/frukty--251C70923/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1000
+      },
+      "heat": false
+    },
+    "user_01rqs719": {
+      "ingredient": "Слива",
+      "category": "Овощи и фрукты",
+      "price": 269.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Слива крупная",
+      "url": "https://5ka.ru/catalog/frukty-yagody--251C51643/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 180,
+        "daily": 250,
+        "weekly": 1000
+      },
+      "heat": false
+    },
+    "user_00n43375": {
+      "ingredient": "Манго",
+      "category": "Овощи и фрукты",
+      "price": 414.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Манго спелое",
+      "url": "https://5ka.ru/catalog/frukty-yagody--251C51643/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 180,
+        "daily": 250,
+        "weekly": 1000
+      },
+      "heat": false
+    },
+    "user_01diwkmh": {
+      "ingredient": "Голубика",
+      "category": "Овощи и фрукты",
+      "price": 249.99,
+      "pack": 125,
+      "unit": "г",
+      "match": "Голубика 125г",
+      "url": "https://5ka.ru/catalog/frukty-yagody--251C51643/",
+      "size": "125 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 125,
+        "daily": 200,
+        "weekly": 700
+      },
+      "heat": false
+    },
+    "user_00qqwcmt": {
+      "ingredient": "Цветная капуста",
+      "category": "Овощи и фрукты",
+      "price": 294.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Капуста цветная свежая",
+      "url": "https://5ka.ru/catalog/svezhie-ovoshchi--251C58552/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": false
+    },
+    "user_01pz6bu7": {
+      "ingredient": "Болгарский перец",
+      "category": "Овощи и фрукты",
+      "price": 339.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Перец желтый сладкий",
+      "url": "https://5ka.ru/catalog/svezhie-ovoshchi--251C58552/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 180,
+        "daily": 250,
+        "weekly": 1100
+      },
+      "heat": false
+    },
+    "user_00kv3hgp": {
+      "ingredient": "Редис",
+      "category": "Овощи и фрукты",
+      "price": 162.99,
+      "pack": 500,
+      "unit": "г",
+      "match": "Редис красный 500г",
+      "url": "https://5ka.ru/catalog/svezhie-ovoshchi--251C58552/",
+      "size": "500 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 120,
+        "daily": 200,
+        "weekly": 700
+      },
+      "heat": false
+    },
+    "user_00af9rk2": {
+      "ingredient": "Тыква",
+      "category": "Овощи и фрукты",
+      "price": 149.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Тыква в ассортименте",
+      "url": "https://5ka.ru/catalog/ovoshchi-zelen-griby--251C51628/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": false
+    },
+    "user_01sxcb4l": {
+      "ingredient": "Шпинат",
+      "category": "Овощи и фрукты",
+      "price": 166.99,
+      "pack": 125,
+      "unit": "г",
+      "match": "Шпинат мини 125г",
+      "url": "https://5ka.ru/catalog/ovoshchi-zelen-griby--251C51628/",
+      "size": "125 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 100,
+        "daily": 150,
+        "weekly": 500
+      },
+      "heat": false
+    },
+    "user_01ne4xnv": {
+      "ingredient": "Чеснок",
+      "category": "Овощи и фрукты",
+      "price": 409.99,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Чеснок",
+      "url": "https://5ka.ru/catalog/frukty-ovoshchi-orekhi--251C39792/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 10,
+        "daily": 15,
+        "weekly": 70
+      },
+      "heat": false
+    },
+    "user_00vnvry0": {
+      "ingredient": "Киноа",
+      "category": "Бакалея",
+      "price": 557.99,
+      "pack": 500,
+      "unit": "г",
+      "match": "Киноа Мистраль 500г",
+      "url": "https://5ka.ru/catalog/kuskus-bulgur-kinoa--251C53131/",
+      "size": "500 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 100,
+        "daily": 130,
+        "weekly": 650
+      },
+      "heat": true
+    },
+    "user_017ukexs": {
+      "ingredient": "Булгур",
+      "category": "Бакалея",
+      "price": 189.99,
+      "pack": 500,
+      "unit": "г",
+      "match": "Булгур Мистраль 500г",
+      "url": "https://5ka.ru/catalog/kuskus-bulgur-kinoa--251C53131/",
+      "size": "500 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 120,
+        "daily": 150,
+        "weekly": 700
+      },
+      "heat": true
+    },
+    "user_01jjbohh": {
+      "ingredient": "Кускус",
+      "category": "Бакалея",
+      "price": 115.99,
+      "pack": 450,
+      "unit": "г",
+      "match": "Кускус Global Village 450г",
+      "url": "https://5ka.ru/catalog/kuskus-bulgur-kinoa--251C53131/",
+      "size": "450 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 120,
+        "daily": 150,
+        "weekly": 700
+      },
+      "heat": true
+    },
+    "user_01a590q8": {
+      "ingredient": "Моцарелла",
+      "category": "Молочные продукты",
+      "price": 129.99,
+      "pack": 180,
+      "unit": "г",
+      "match": "Сыр Вкус & Польза Моцарелла шарики 45% БЗМЖ 180г",
+      "url": "https://5ka.ru/catalog/syr--251C70912/",
+      "size": "180 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 75,
+        "daily": 100,
+        "weekly": 420
+      },
+      "heat": false
+    },
+    "user_016m38m0": {
+      "ingredient": "Сметана",
+      "category": "Молочные продукты",
+      "price": 119.99,
+      "pack": 320,
+      "unit": "г",
+      "match": "Сметана Ростагроэкспорт 10% БЗМЖ 320г",
+      "url": "https://5ka.ru/catalog/molochnaya-produktsiya-i-yaytso--251C13808/",
+      "size": "320 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 40,
+        "daily": 80,
+        "weekly": 350
+      },
+      "heat": false
+    },
+    "user_001rky2m": {
+      "ingredient": "Говядина",
+      "category": "Мясо, рыба и яйца",
+      "price": 1299,
+      "pack": 1000,
+      "unit": "г",
+      "match": "Говядина мякоть бедра",
+      "url": "https://5ka.ru/catalog/govyadina--251C52348/",
+      "size": "Цена за 1 кг",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": true
+    },
+    "user_01huw6rj": {
+      "ingredient": "Треска",
+      "category": "Мясо, рыба и яйца",
+      "price": 1129,
+      "pack": 400,
+      "unit": "г",
+      "match": "Треска атлантическая Borealis филе без кожи замороженная 400г",
+      "url": "https://5ka.ru/catalog/ryba--251C13077/",
+      "size": "400 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": true
+    },
+    "user_00r8gw0q": {
+      "ingredient": "Тунец",
+      "category": "Мясо, рыба и яйца",
+      "price": 599.99,
+      "pack": 500,
+      "unit": "г",
+      "match": "Тунец Вкус Арт филе без кожи замороженное 500г",
+      "url": "https://5ka.ru/catalog/ryba--251C13077/",
+      "size": "500 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": true
+    },
+    "user_010zm8xy": {
+      "ingredient": "Фарш говяжий",
+      "category": "Мясо, рыба и яйца",
+      "price": 269.99,
+      "pack": 400,
+      "unit": "г",
+      "match": "Фарш говяжий Рестория 400г",
+      "url": "https://5ka.ru/catalog/myaso-ptitsa--251C38507/",
+      "size": "400 г",
+      "observed": "2026-11-26",
+      "origin": "public_catalog_search",
+      "policy": "regular_price",
+      "limits": {
+        "serving": 200,
+        "daily": 300,
+        "weekly": 1400
+      },
+      "heat": true
     }
   },
-  "schema": 2
+  "schema": 3
 }
