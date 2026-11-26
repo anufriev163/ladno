@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-11-26T07:08:45.809Z",
+  "runId": "45773139227",
+  "result": "generation_http_error",
+  "version": {
+    "status": 200,
+    "cors": true,
+    "ready": true,
+    "api": 3,
+    "version": "cloudflare-v4"
+  },
+  "preflight": {
+    "status": 204,
+    "cors": true
+  },
+  "generation": {
+    "status": 502,
+    "cors": true,
+    "ms": 578,
+    "code": "PROVIDER_NETWORK",
+    "upstreamStatus": null
+  }
+}
