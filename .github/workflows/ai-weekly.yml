@@ -1,0 +1,74 @@
+name: Full weekly AI acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/ai-weekly.yml']
+permissions:
+  contents: write
+concurrency:
+  group: ai-weekly-acceptance
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test one actual full-week generation
+        shell: bash
+        run: |
+          mkdir -p diagnostics
+          node --input-type=module <<'NODE'
+          import {readFile,writeFile} from 'node:fs/promises';
+          const base='https://ladno.anufrievdenis1996-4f6.workers.dev';
+          const origin='https://anufriev163.github.io';
+          const report={checkedAt:new Date().toISOString(),runId:process.env.GITHUB_RUN_ID,commit:process.env.GITHUB_SHA,fixture:{adults:1,days:7,mealsPerDay:3,budget:6000},result:'not_tested'};
+          const safeCode=x=>typeof x==='string'&&/^[A-Z0-9_]{1,50}$/.test(x)?x:null;
+          try{
+            const v=await fetch(base+'/version',{headers:{Origin:origin},redirect:'error',signal:AbortSignal.timeout(12000)});
+            const server=await v.json();
+            report.version={status:v.status,ready:server.ready===true,version:/^cloudflare-v[0-9]+$/.test(server.version)?server.version:null};
+            if(!v.ok||!server.ready||server.api<3||!server.capabilities?.includes('generate-recipes')||!Array.isArray(server.foodIds))throw Error('VERSION_NOT_READY');
+            const html=await readFile('index.html','utf8');
+            const js=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+            const source=await readFile('worker.mjs','utf8');
+            const worker=new Function(source.slice(0,source.indexOf('const ORIGIN='))+'\nreturn {validInput,validateGenerated};')();
+            const seed={quizV2:true,profileFlowV1:true,profileComplete:true,recipeV4:true,recipeV5:true,wishesV1:true,wishesV2:true,weekFlowV2:true,view:'plan',store:'Пятёрочка',storeChoices:['Пятёрочка'],adults:1,budget:6000,days:[0,1,2,3,4,5,6],meals:['Завтрак','Обед','Ужин'],equipment:['Плита','Духовка','Микроволновка'],diet:'Без ограничений',style:'Разнообразие'};
+            const app={innerHTML:'',addEventListener(){}};
+            const client=new Function('document','localStorage','location','window','server',js+`
+              const cap={mode:'generate',foodIds:new Set(server.foodIds),customProducts:server.capabilities.includes('custom-products'),zeroBudget:server.capabilities.includes('zero-budget')};
+              return {payload:buildAIRequest('',100000,cap),decode(raw,catalog){
+                const d=decodeAI(raw,catalog);recipes.splice(baseCount);recipes.push(...d.fresh);s.plan=d.plan;
+                const issue=auditPlan(s.plan);
+                return {slots:s.plan.length,uniqueRecipes:new Set(s.plan.map(x=>x.id)).size,cost:Math.round(total()*100)/100,missingPrices:missingPrices(),items:basket().length,planValid:!issue};
+              }};
+            `)({querySelector:()=>app},{getItem:()=>JSON.stringify(seed),setItem(){}},{hostname:'anufriev163.github.io',origin},{scrollTo(){}},server);
+            const payload=client.payload;
+            report.request={valid:worker.validInput(payload),catalogSize:Object.keys(payload.catalog).length,slots:payload.profile.days.length*payload.profile.meals.length,personalDataIncluded:payload.profile.personal!==null};
+            if(!report.request.valid||report.request.personalDataIncluded||report.request.slots!==21)throw Error('INVALID_REQUEST_FIXTURE');
+            const start=Date.now();
+            const response=await fetch(base+'/api/menu',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(110000)});
+            let data=null;try{data=await response.json()}catch{}
+            report.generation={status:response.status,cors:response.headers.get('access-control-allow-origin')===origin,ms:Date.now()-start,code:safeCode(data?.code)};
+            if(!response.ok||!report.generation.cors){report.result='generation_http_error'}
+            else{
+              let raw;try{raw=JSON.parse(data?.content)}catch{throw Error('MODEL_JSON')}
+              report.serverValidation=!!worker.validateGenerated(raw,payload);
+              if(!report.serverValidation)throw Error('SERVER_VALIDATION_FAILED');
+              try{report.client=client.decode(raw,payload.catalog)}catch{throw Error('CLIENT_VALIDATION_FAILED')}
+              report.result=report.client.slots===21&&report.client.planValid&&report.client.items>0&&report.client.missingPrices===0&&report.client.cost<=seed.budget?'passed':'incomplete_week';
+            }
+          }catch(e){report.result=e.name==='TimeoutError'||e.name==='AbortError'?'timeout':'acceptance_error';report.error=safeCode(e.message)||safeCode(e.cause?.code)||'UNKNOWN';}
+          await writeFile('diagnostics/ai-weekly-result.json',JSON.stringify(report,null,2)+'\n');
+          console.log(JSON.stringify(report,null,2));
+          NODE
+      - name: Save sanitized acceptance report
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/ai-weekly-result.json
+          git commit -m 'Record full weekly AI acceptance'
+          git pull --rebase origin main
+          git push origin HEAD:main
