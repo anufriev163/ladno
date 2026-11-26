@@ -1,0 +1,149 @@
+name: Responsive browser audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/ui-browser-audit.yml']
+permissions:
+  contents: write
+concurrency:
+  group: ui-browser-audit
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser test driver
+        run: npm install --prefix "$RUNNER_TEMP/nalegke-ui-test" --no-package-lock --no-audit --no-fund playwright-core@1.51.1
+      - name: Audit actual Chromium rendering
+        shell: bash
+        run: |
+          mkdir -p diagnostics "$RUNNER_TEMP/nalegke-screens"
+          node <<'NODE'
+          const {chromium}=require(process.env.RUNNER_TEMP+'/nalegke-ui-test/node_modules/playwright-core');
+          const fs=require('node:fs/promises');
+          const http=require('node:http');
+          const path=require('node:path');
+          const screenDir=process.env.RUNNER_TEMP+'/nalegke-screens';
+          const report={commit:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,checkedAt:new Date().toISOString(),engine:'Chromium',fixture:'synthetic local menu, no AI calls',viewports:[],checks:[],runtimeErrors:[]};
+          const sizes=[
+            {name:'phone-small',width:320,height:568,touch:true},
+            {name:'phone',width:390,height:844,touch:true},
+            {name:'phone-large',width:430,height:932,touch:true},
+            {name:'tablet-small',width:600,height:960,touch:true},
+            {name:'tablet-portrait',width:768,height:1024,touch:true},
+            {name:'tablet-wide',width:1024,height:1366,touch:true},
+            {name:'tablet-landscape',width:1024,height:768,touch:true},
+            {name:'tablet-large-landscape',width:1366,height:1024,touch:true},
+            {name:'laptop',width:1280,height:720,touch:false},
+            {name:'desktop',width:1440,height:900,touch:false},
+            {name:'desktop-large',width:1920,height:1080,touch:false}
+          ];
+          const seed={quizV2:true,profileFlowV1:true,profileComplete:true,recipeV4:true,recipeV5:true,wishesV1:true,wishesV2:true,weekFlowV2:true,view:'plan',store:'Пятёрочка',storeChoices:['Пятёрочка'],adults:1,budget:6000,days:[0,1,2,3,4,5,6],meals:['Завтрак','Обед','Ужин']};
+          const screens=[
+            ['welcome',()=>{s.view='quiz';s.weeklySetup=false;s.step=0}],
+            ...[2,4,7,8,9,6,10,11,5,1].map(step=>['profile-'+step,()=>{}]),
+            ...[3,12,13,14].map(step=>['week-'+step,()=>{}]),
+            ['empty-plan',()=>{}],['empty-shopping',()=>{}],
+            ['plan',()=>{}],['shopping',()=>{}],['recipe',()=>{}],
+            ['settings',()=>{}],['budget',()=>{}],['profile',()=>{}],
+            ['failure',()=>{}],['loading',()=>{}]
+          ];
+          let server,browser;
+          async function main(){
+            const html=await fs.readFile('index.html');
+            server=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html)});
+            await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+            const url='http://127.0.0.1:'+server.address().port+'/';
+            browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
+            report.browserVersion=browser.version();
+            const previews=[];
+            for(const size of sizes){
+              const context=await browser.newContext({viewport:{width:size.width,height:size.height},deviceScaleFactor:1,hasTouch:size.touch,isMobile:size.touch,locale:'ru-RU'});
+              await context.route('**/*',route=>route.request().url().startsWith(url)?route.continue():route.abort());
+              await context.addInitScript(data=>localStorage.setItem('ladno-v1',JSON.stringify(data)),seed);
+              const page=await context.newPage();
+              page.on('pageerror',e=>report.runtimeErrors.push({viewport:size.name,error:String(e.message).slice(0,500)}));
+              page.on('dialog',d=>d.dismiss().catch(()=>{}));
+              await page.goto(url);
+              const fixture=await page.evaluate(()=>{s.view='plan';const error=generate();return {error,plan:s.plan,recipes:s.aiRecipes,source:s.source}});
+              if(fixture.error||fixture.plan.length!==21)throw Error('Fixture failed for '+size.name+': '+fixture.error);
+              const view={name:size.name,width:size.width,height:size.height,states:0,failures:0};
+              report.viewports.push(view);
+              for(const [state] of screens){
+                await page.evaluate(({state,fixture})=>{
+                  aiBusy=false;generationError='';s.search='';s.weeklySetup=false;s.plan=fixture.plan;s.aiRecipes=fixture.recipes;s.source=fixture.source;
+                  if(state==='welcome'){s.view='quiz';s.step=0}
+                  else if(state.startsWith('profile-')){s.view='quiz';s.step=Number(state.slice(8))}
+                  else if(state.startsWith('week-')){s.view='quiz';s.weeklySetup=true;s.step=Number(state.slice(5))}
+                  else if(state.startsWith('empty-')){s.view=state.slice(6);s.plan=[]}
+                  else if(state==='failure'){s.view='plan';generationError='Cloudflare не смог связаться с AnyModel.'}
+                  else if(state==='loading'){s.view='plan';aiBusy=true;generationStartedAt=Date.now()}
+                  else{s.view=state;if(state==='recipe')detail=0}
+                  render();window.scrollTo(0,0);
+                },{state,fixture});
+                await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+                const metric=await page.evaluate(()=>{
+                  const W=document.documentElement.clientWidth,H=window.innerHeight;
+                  const visible=el=>{const r=el.getBoundingClientRect(),style=getComputedStyle(el);return r.width>0&&r.height>0&&style.display!=='none'&&style.visibility!=='hidden'&&(!el.closest('details:not([open])')||el.matches('summary'))};
+                  const bar=document.querySelector('.footer,.tabbar'),main=document.querySelector('main'),h=document.querySelector('h1');
+                  const fixed=bar&&getComputedStyle(bar).position==='fixed',br=bar?.getBoundingClientRect();
+                  const invalid=[...document.querySelectorAll('button,input,select,textarea,a')].filter(visible).filter(el=>{const r=el.getBoundingClientRect();return r.left< -1||r.right>W+1}).map(el=>({tag:el.tagName,cls:el.className,text:(el.textContent||el.getAttribute('aria-label')||'').trim().slice(0,70)})).slice(0,8);
+                  const clipped=[...document.querySelectorAll('.choice,.chip,.meal-open,.search-option,.settings-row,.primary,.secondary')].filter(visible).filter(el=>el.scrollWidth>el.clientWidth+2).map(el=>(el.textContent||'').trim().slice(0,70)).slice(0,8);
+                  const tapSmall=[...document.querySelectorAll('button,input:not([type=checkbox]):not([type=range]),select,a.primary,a.secondary')].filter(visible).filter(el=>{const r=el.getBoundingClientRect();return r.width<43||r.height<43}).map(el=>({text:(el.textContent||el.getAttribute('aria-label')||'').trim().slice(0,70),width:Math.round(el.getBoundingClientRect().width),height:Math.round(el.getBoundingClientRect().height)})).slice(0,8);
+                  const pad=main?parseFloat(getComputedStyle(main).paddingBottom):0;
+                  return {width:W,height:H,documentWidth:document.documentElement.scrollWidth,heading:h?.textContent,nav:bar?.className||null,navPosition:bar?getComputedStyle(bar).position:null,navHeight:Math.round(br?.height||0),bottomPadding:Math.round(pad),fixedOverlapRisk:!!fixed&&pad<(br?.height||0)-2,invalid,clipped,tapSmall,mealCount:document.querySelectorAll('.meal-open').length,groceryCount:document.querySelectorAll('.grocery').length};
+                });
+                const issues=[];
+                if(!metric.heading)issues.push('missing_heading');
+                if(metric.documentWidth>metric.width+2||metric.invalid.length)issues.push('horizontal_overflow');
+                if(metric.clipped.length)issues.push('clipped_controls');
+                if(metric.fixedOverlapRisk)issues.push('fixed_bottom_bar_overlap');
+                if(size.touch&&metric.tapSmall.length)issues.push('small_touch_targets');
+                if(state==='plan'&&metric.mealCount!==21)issues.push('missing_menu');
+                if(state==='shopping'&&metric.groceryCount===0)issues.push('missing_groceries');
+                view.states++;if(issues.length)view.failures++;
+                report.checks.push({viewport:size.name,state,issues,metric});
+                if(['welcome','profile-9','profile-10','week-14','plan','shopping','recipe','failure'].includes(state)&&['phone','tablet-portrait','tablet-landscape','desktop'].includes(size.name)||issues.length){
+                  const fname=size.name+'-'+state+'.jpg';
+                  const shot=await page.screenshot({path:path.join(screenDir,fname),type:'jpeg',quality:75,animations:'disabled'});
+                  if(['phone','tablet-portrait','tablet-landscape','desktop'].includes(size.name)&&['welcome','plan','shopping','profile-9'].includes(state))previews.push({size:size.name,state,src:shot.toString('base64')});
+                }
+              }
+              await context.close();
+            }
+            const preview=await browser.newPage({viewport:{width:1000,height:1000}});
+            for(const state of ['welcome','plan','shopping','profile-9']){
+              const rows=previews.filter(x=>x.state===state);
+              await preview.setContent('<body style="margin:0;background:#eee;font:14px Arial"><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:12px">'+rows.map(x=>'<div style="background:white;padding:10px;min-width:0"><b>'+x.size+' · '+x.state+'</b><img style="display:block;max-width:100%;width:auto;height:360px;object-fit:contain;margin:8px auto 0" src="data:image/jpeg;base64,'+x.src+'"></div>').join('')+'</div></body>');
+              await preview.locator('img').first().evaluate(e=>e.decode());
+              const jpg=await preview.screenshot({type:'jpeg',quality:58,fullPage:true});
+              await fs.writeFile(path.join(screenDir,'overview-'+state+'.jpg'),jpg);
+              // Store small test-only previews to permit visual review through the repository connector.
+              await fs.writeFile('diagnostics/ui-preview-'+state+'.b64',jpg.toString('base64')+'\n');
+            }
+            await preview.close();
+          }
+          (async()=>{try{await main()}catch(e){report.fatal=String(e.message).slice(0,500)}finally{if(browser)await browser.close();if(server)server.close();report.total=report.checks.length;report.failed=report.checks.filter(x=>x.issues.length).length;await fs.writeFile('diagnostics/ui-browser-result.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({total:report.total,failed:report.failed,runtimeErrors:report.runtimeErrors.length,fatal:report.fatal,viewports:report.viewports}));}})();
+          NODE
+      - name: Preserve screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-browser-screens
+          path: ${{ runner.temp }}/nalegke-screens/
+          retention-days: 7
+      - name: Save browser audit result
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -f diagnostics/ui-browser-result.json ]; then exit 1; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/ui-browser-result.json
+          for f in diagnostics/ui-preview-*.b64; do [ ! -f "$f" ] || git add "$f"; done
+          git commit -m 'Record responsive browser audit'
+          git pull --rebase origin main
+          git push origin HEAD:main
