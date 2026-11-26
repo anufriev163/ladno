@@ -95,7 +95,7 @@ export default {
    return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600','Vary':'Origin'}})
   }
   const ready=!!env.ANYMODEL_API_KEY&&!!env.MENU_QUOTA;
-  if(req.method==='GET'&&['/health','/version'].includes(path))return send({ready,version:'cloudflare-v5',api:3,capabilities:['generate-recipes','select-recipes','custom-products','product-search','diagnostics','zero-budget','expanded-catalog'],foodIds:[...ids]});
+  if(req.method==='GET'&&['/health','/version'].includes(path))return send({ready,version:'cloudflare-v6',api:3,capabilities:['generate-recipes','select-recipes','custom-products','product-search','diagnostics','zero-budget','expanded-catalog'],foodIds:[...ids]});
   if(path==='/api/products'&&req.method==='GET'){
    if(origin!==ORIGIN)return send({error:'Origin required'},403);
    const q=(new URL(req.url).searchParams.get('q')||'').trim();
@@ -133,15 +133,16 @@ export default {
    if(p.children)profile.goal='Обычное питание';
    const catalog=Object.fromEntries(Object.entries(data.catalog).map(([k,v])=>[k,{name:v.name,price:v.price,package:v.package,unit:v.unit}]));
    const candidates=(data.candidates||[]).map(x=>({id:x.id,name:x.name,type:x.type,time:x.time,ingredients:x.ingredients}));
-   const upstream=await fetch('https://anymodel.org/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+env.ANYMODEL_API_KEY},body:JSON.stringify({model:'ds/deepseek-v4-flash',messages:[{role:'system',content:data.mode==='generate'?generatePrompt:compactPrompt},{role:'user',content:JSON.stringify({profile,catalog,...(data.mode==='select'?{candidates}:{}),correction:String(data.correction||'').slice(0,500)})}],max_tokens:data.mode==='generate'?10000:2000,stream:false}),signal:controller.signal,redirect:'error'});
+   let upstream;try{upstream=await fetch('https://anymodel.org/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+env.ANYMODEL_API_KEY},body:JSON.stringify({model:'ds/deepseek-v4-flash',messages:[{role:'system',content:data.mode==='generate'?generatePrompt:compactPrompt},{role:'user',content:JSON.stringify({profile,catalog,...(data.mode==='select'?{candidates}:{}),correction:String(data.correction||'').slice(0,500)})}],max_tokens:data.mode==='generate'?10000:2000,stream:false}),signal:controller.signal,redirect:'manual'});}catch(e){const name=String(e?.name||'');return send({error:'Provider connection failed',code:controller.signal.aborted?'TIMEOUT':'PROVIDER_NETWORK',stage:'fetch',kind:name==='TypeError'?'TypeError':name==='AbortError'?'AbortError':'Other'},502)}
+   if(upstream.status>=300&&upstream.status<400)return send({error:'Unexpected provider redirect',code:'PROVIDER_REDIRECT',upstreamStatus:upstream.status},502);
    if(!upstream.ok)return send({error:'Generation temporarily unavailable',code:upstream.status===401||upstream.status===403?'PROVIDER_AUTH':upstream.status===402?'PROVIDER_BALANCE':upstream.status===429?'PROVIDER_LIMIT':upstream.status===404?'MODEL_UNAVAILABLE':'PROVIDER_HTTP',upstreamStatus:upstream.status},502);
-   const out=await upstream.json(),content=out?.choices?.[0]?.message?.content;
+   let out;try{out=await upstream.json()}catch{return send({error:'Provider response is not JSON',code:controller.signal.aborted?'TIMEOUT':'PROVIDER_RESPONSE',upstreamStatus:upstream.status,stage:'decode'},502)}const content=out?.choices?.[0]?.message?.content;
    if(typeof content!=='string'||content.length>100000)return send({error:'Empty result',code:'MODEL_EMPTY'},422);
    let result;try{result=JSON.parse(content.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}catch{return send({error:'Invalid model response',code:'MODEL_JSON'},422)}
    if(data.mode==='generate'){const checked=validateGenerated(result,data);if(!checked)return send({error:'Invalid model response',code:'MODEL_PLAN'},422);return send({content:JSON.stringify(checked)})}
    const options=new Map(candidates.map(x=>[x.id,x.type])),seen=new Set();
    if(!Array.isArray(result?.plan)||result.plan.length!==p.days.length*p.meals.length||!result.plan.every(x=>{if(!x||!p.days.includes(x.day)||!p.meals.includes(x.meal)||options.get(x.id)!==x.meal)return false;const k=x.day+'|'+x.meal;if(seen.has(k))return false;seen.add(k);return true}))return send({error:'Invalid model response'},502);
    return send({content:JSON.stringify({plan:result.plan.map(({day,meal,id})=>({day,meal,id})),note:typeof result.note==='string'?result.note.slice(0,700):''})});
-  }catch{return send({error:'Generation temporarily unavailable',code:controller.signal.aborted?'TIMEOUT':'PROVIDER_NETWORK'},502)}finally{clearTimeout(timer);req.signal.removeEventListener('abort',abort)}
+  }catch{return send({error:'Generation temporarily unavailable',code:controller.signal.aborted?'TIMEOUT':'INTERNAL_ERROR',stage:'processing'},502)}finally{clearTimeout(timer);req.signal.removeEventListener('abort',abort)}
  }
 };
